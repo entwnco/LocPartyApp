@@ -157,6 +157,56 @@ textarea {
   flex: 1;
 }
 
+/* ---- entrance / welcome ---- */
+.entrance-screen {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100svh;
+  padding-bottom: 28px;
+}
+
+.entrance-content {
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.entrance-logo {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: var(--shadow-pop);
+}
+
+.entrance-welcome-art {
+  width: min(78vw, 330px);
+  height: auto;
+  display: block;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+}
+
+.entrance-title {
+  font-size: clamp(2.15rem, 10vw, 2.8rem);
+}
+
+@media (max-height: 760px) {
+  .entrance-screen {
+    justify-content: flex-start;
+  }
+
+  .entrance-logo {
+    width: 88px;
+    height: 88px;
+  }
+
+  .entrance-welcome-art {
+    width: min(64vw, 260px);
+  }
+}
+
 /* ---- eyebrow / section labels (no pills, left accent bar instead) ---- */
 .eyebrow {
   font-family: var(--font-head);

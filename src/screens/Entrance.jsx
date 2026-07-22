@@ -7,15 +7,20 @@ export default function Entrance() {
   const navigate = useNavigate();
 
   return (
-    <div className="screen" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100svh' }}>
-      <div className="stack" style={{ alignItems: 'center', gap: 18 }}>
+    <div className="screen entrance-screen">
+      <div className="stack entrance-content">
         <img
           src="/logo-square.png"
           alt="The Loc Party"
-          style={{ width: 150, height: 150, borderRadius: 18, boxShadow: 'var(--shadow-pop)' }}
+          className="entrance-logo"
+        />
+        <img
+          src="/graphics/welcome-wave.png"
+          alt="A Loc Party guest waving hello"
+          className="entrance-welcome-art"
         />
         <span className="eyebrow">Welcome to</span>
-        <h1 style={{ fontSize: '2.4rem' }}>{EVENT_INFO.name}</h1>
+        <h1 className="entrance-title">{EVENT_INFO.name}</h1>
         <p style={{ maxWidth: 320 }}>{EVENT_INFO.tagline}</p>
 
         {!ready ? (
