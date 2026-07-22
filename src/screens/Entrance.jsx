@@ -13,11 +13,13 @@ export default function Entrance() {
           src="/logo-square.png"
           alt="The Loc Party"
           className="entrance-logo"
+          decoding="async"
         />
         <img
-          src="/graphics/welcome-wave.png"
+          src="/graphics/welcome-wave-splatter.webp"
           alt="A Loc Party guest waving hello"
           className="entrance-welcome-art"
+          decoding="async"
         />
         <span className="eyebrow">Welcome to</span>
         <h1 className="entrance-title">{EVENT_INFO.name}</h1>

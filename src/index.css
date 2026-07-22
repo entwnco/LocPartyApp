@@ -180,9 +180,8 @@ textarea {
 .entrance-logo {
   width: 112px;
   height: 112px;
-  object-fit: cover;
-  border-radius: 14px;
-  box-shadow: var(--shadow-pop);
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28));
 }
 
 .entrance-welcome-art {
