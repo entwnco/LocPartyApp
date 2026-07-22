@@ -7,15 +7,21 @@ export default function Profile() {
   const { guest, updateGuest, setRelationshipStatus, addProfilePhoto, content } = useAppState();
   const [displayName, setDisplayName] = useState(guest.displayName);
   const [busy, setBusy] = useState(false);
+  const [photoError, setPhotoError] = useState('');
 
   async function handlePhoto(e, action) {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
+    setPhotoError('');
     try {
       await action(file);
+    } catch (err) {
+      console.error('Photo upload failed:', err);
+      setPhotoError(err?.message || 'Upload failed — try a different photo or check your connection.');
     } finally {
       setBusy(false);
+      e.target.value = '';
     }
   }
 
@@ -39,6 +45,7 @@ export default function Profile() {
           {guest.photoDataUrl ? <img src={guest.photoDataUrl} alt="Profile" /> : <span>{busy ? 'Loading…' : 'Tap to upload'}</span>}
           <input type="file" accept="image/*" hidden onChange={(e) => handlePhoto(e, addProfilePhoto)} />
         </label>
+        {photoError && <p style={{ color: 'var(--danger, #e05353)' }}>{photoError}</p>}
       </div>
 
       <div className="field">

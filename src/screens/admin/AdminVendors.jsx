@@ -10,6 +10,7 @@ export default function AdminVendors() {
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   async function save(v) {
     setBusy(true);
@@ -30,11 +31,16 @@ export default function AdminVendors() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError('');
     try {
       const url = await uploadVendorLogo(file, editing.id);
       setEditing((cur) => ({ ...cur, logoUrl: url }));
+    } catch (err) {
+      console.error('Vendor logo upload failed:', err);
+      setUploadError(err?.message || 'Upload failed — try a different photo.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   }
 
@@ -52,6 +58,7 @@ export default function AdminVendors() {
             )}
             <input type="file" accept="image/*" hidden disabled={uploading} onChange={handleLogoChange} />
           </label>
+          {uploadError && <p style={{ color: 'var(--danger, #e05353)' }}>{uploadError}</p>}
           {editing.logoUrl && (
             <button
               type="button"
