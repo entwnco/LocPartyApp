@@ -38,6 +38,7 @@ export default function Vendors() {
 function VendorCard({ vendor }) {
   return (
     <div className="card flat">
+      {vendor.logoUrl && <img src={vendor.logoUrl} alt={`${vendor.name} photo`} className="vendor-card-logo" />}
       <span className="tag">{vendor.category}</span>
       <h3 style={{ marginTop: 8 }}>{vendor.name}</h3>
       <p>{vendor.description}</p>

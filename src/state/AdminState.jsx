@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabaseAdmin } from '../lib/supabaseClient.js';
 import * as api from '../lib/api.js';
+import { fileToResizedBlob } from '../lib/image.js';
 
 const AdminStateContext = createContext(null);
 
@@ -130,6 +131,15 @@ export function AdminStateProvider({ children }) {
   // ---- vendors ----
   const saveVendor = useCallback(async (v) => { await api.upsertVendor(v, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const deleteVendorItem = useCallback(async (id) => { await api.deleteVendor(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const uploadVendorLogo = useCallback(
+    async (file, vendorId) => {
+      if (!session) return null;
+      const blob = await fileToResizedBlob(file, 800, 0.85);
+      const filename = `vendor-${vendorId || Date.now()}.jpg`;
+      return api.uploadPhoto(session.user.id, blob, filename, supabaseAdmin);
+    },
+    [session]
+  );
 
   // ---- schedule ----
   const saveScheduleItem = useCallback(async (s) => { await api.upsertScheduleItem(s, supabaseAdmin); await refreshContent(); }, [refreshContent]);
@@ -216,6 +226,7 @@ export function AdminStateProvider({ children }) {
     deleteChallengeItem,
     saveVendor,
     deleteVendorItem,
+    uploadVendorLogo,
     saveScheduleItem,
     deleteScheduleItemRow,
     saveAnnouncement,
