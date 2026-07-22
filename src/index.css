@@ -196,6 +196,15 @@ textarea {
   font-size: clamp(2.15rem, 10vw, 2.8rem);
 }
 
+.relationship-status-art {
+  align-self: center;
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+  margin-top: 4px;
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.3));
+}
+
 .entrance-content .eyebrow {
   border-left: none;
   padding-left: 0;
