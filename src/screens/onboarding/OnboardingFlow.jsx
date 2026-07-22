@@ -154,13 +154,6 @@ export default function OnboardingFlow() {
             Relationship responses may be used anonymously for event insights (e.g. group totals). No individual
             response is ever shown publicly.
           </p>
-          <img
-            src="/graphics/relationship-status-couple.png"
-            alt="Two Loc Party guests surrounded by colorful paint splatter"
-            className="relationship-status-art"
-            loading="lazy"
-            decoding="async"
-          />
         </div>
       )}
 

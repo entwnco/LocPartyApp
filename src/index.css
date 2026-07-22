@@ -61,7 +61,7 @@
 
 html {
   /* bumps every rem-based size app-wide for legibility */
-  font-size: 18px;
+  font-size: 20px;
 }
 
 html,
@@ -199,15 +199,6 @@ textarea {
 .entrance-content .eyebrow {
   border-left: none;
   padding-left: 0;
-}
-
-.relationship-status-art {
-  align-self: center;
-  display: block;
-  width: min(100%, 420px);
-  height: auto;
-  margin-top: 4px;
-  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.3));
 }
 
 @media (max-height: 760px) {
