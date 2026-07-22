@@ -172,6 +172,7 @@ export function AdminStateProvider({ children }) {
   // ---- app config (point values / theme colors / raffle entry sources) ----
   const savePointValues = useCallback(async (pointValues) => { await api.updateAppConfig({ pointValues }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const saveThemeColors = useCallback(async (themeColors) => { await api.updateAppConfig({ themeColors }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveHuntCopy = useCallback(async (huntTitle, huntBody) => { await api.updateAppConfig({ huntTitle, huntBody }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- submissions / completions ----
   const reviewCompletion = useCallback(
@@ -243,6 +244,7 @@ export function AdminStateProvider({ children }) {
 
     savePointValues,
     saveThemeColors,
+    saveHuntCopy,
 
     reviewCompletion,
     triggerHiddenChallenge,

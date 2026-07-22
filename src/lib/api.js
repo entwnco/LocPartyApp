@@ -411,6 +411,8 @@ export async function fetchAppConfig(client = supabase) {
     pointValues: data.point_values,
     raffleEntrySources: data.raffle_entry_sources,
     themeColors: data.theme_colors,
+    huntTitle: data.hunt_title,
+    huntBody: data.hunt_body,
   };
 }
 
@@ -419,9 +421,17 @@ export async function updateAppConfig(patch, client = supabase) {
   if ('pointValues' in patch) dbPatch.point_values = patch.pointValues;
   if ('raffleEntrySources' in patch) dbPatch.raffle_entry_sources = patch.raffleEntrySources;
   if ('themeColors' in patch) dbPatch.theme_colors = patch.themeColors;
+  if ('huntTitle' in patch) dbPatch.hunt_title = patch.huntTitle;
+  if ('huntBody' in patch) dbPatch.hunt_body = patch.huntBody;
   const { data, error } = await client.from('app_config').update(dbPatch).eq('id', 1).select().single();
   if (error) throw error;
-  return { pointValues: data.point_values, raffleEntrySources: data.raffle_entry_sources, themeColors: data.theme_colors };
+  return {
+    pointValues: data.point_values,
+    raffleEntrySources: data.raffle_entry_sources,
+    themeColors: data.theme_colors,
+    huntTitle: data.hunt_title,
+    huntBody: data.hunt_body,
+  };
 }
 
 // ---- completions / submissions ----------------------------------------------
@@ -510,6 +520,8 @@ export async function fetchAllContent(client = supabase) {
     pointValues: appConfig.pointValues,
     raffleEntrySources: appConfig.raffleEntrySources,
     themeColors: appConfig.themeColors,
+    huntTitle: appConfig.huntTitle,
+    huntBody: appConfig.huntBody,
   };
 }
 

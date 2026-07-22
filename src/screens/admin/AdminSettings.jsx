@@ -3,9 +3,11 @@ import { useAdminState } from '../../state/AdminState.jsx';
 import { RELATIONSHIP_STATUSES } from '../../data/config.js';
 
 export default function AdminSettings() {
-  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors } = useAdminState();
+  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors, saveHuntCopy } = useAdminState();
   const [pointValues, setPointValues] = useState(content.pointValues);
   const [themeColors, setThemeColors] = useState(content.themeColors);
+  const [huntTitle, setHuntTitle] = useState(content.huntTitle);
+  const [huntBody, setHuntBody] = useState(content.huntBody);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState('');
 
@@ -25,6 +27,17 @@ export default function AdminSettings() {
     try {
       await saveThemeColors(themeColors);
       setSaved('colors');
+      setTimeout(() => setSaved(''), 1500);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveHuntCopy() {
+    setBusy(true);
+    try {
+      await saveHuntCopy(huntTitle, huntBody);
+      setSaved('hunt');
       setTimeout(() => setSaved(''), 1500);
     } finally {
       setBusy(false);
@@ -82,6 +95,21 @@ export default function AdminSettings() {
       </div>
       <button className="btn btn-primary btn-sm" onClick={handleSaveThemeColors} disabled={busy}>
         {saved === 'colors' ? 'Saved!' : 'Save colors'}
+      </button>
+
+      <hr className="divider" />
+      <h3>Scavenger hunt intro</h3>
+      <p className="field-hint">The headline and blurb guests see at the top of the Scavenger Hunt screen.</p>
+      <div className="field">
+        <label>Title</label>
+        <input type="text" value={huntTitle} onChange={(e) => setHuntTitle(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Body</label>
+        <textarea rows={3} value={huntBody} onChange={(e) => setHuntBody(e.target.value)} />
+      </div>
+      <button className="btn btn-primary btn-sm" onClick={handleSaveHuntCopy} disabled={busy}>
+        {saved === 'hunt' ? 'Saved!' : 'Save hunt intro'}
       </button>
 
       <hr className="divider" />

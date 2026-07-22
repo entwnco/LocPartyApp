@@ -2,18 +2,15 @@ import { useAppState } from '../state/AppState.jsx';
 import ChallengeCard from '../components/ChallengeCard.jsx';
 
 export default function ScavengerHunt() {
-  const { guest, visibleChallenges, completions } = useAppState();
+  const { guest, visibleChallenges, completions, content } = useAppState();
   const sorted = [...visibleChallenges].sort((a, b) => Number(!a.status.unlocked) - Number(!b.status.unlocked));
 
   return (
     <div className="screen">
       <div>
         <span className="eyebrow">Scavenger hunt</span>
-        <h1>Your map through the Loc Party</h1>
-        <p>
-          Complete challenges, visit vendors, and catch hidden moments to earn points and raffle entries. Tap any
-          card below to jump in — new ones unlock as the night goes on.
-        </p>
+        <h1>{content.huntTitle}</h1>
+        <p>{content.huntBody}</p>
       </div>
 
       {sorted.length === 0 ? (

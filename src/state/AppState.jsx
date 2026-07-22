@@ -29,6 +29,8 @@ const EMPTY_CONTENT = {
   pointValues: {},
   raffleEntrySources: {},
   themeColors: {},
+  huntTitle: 'Your map through the Loc Party',
+  huntBody: 'Complete challenges, visit vendors, and catch hidden moments to earn points and raffle entries. Tap any card below to jump in — new ones unlock as the night goes on.',
 };
 
 export function AppStateProvider({ children }) {
