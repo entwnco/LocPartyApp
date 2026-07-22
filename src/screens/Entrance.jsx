@@ -43,7 +43,7 @@ export default function Entrance() {
           </>
         ) : (
           <button className="btn btn-primary btn-block" onClick={() => navigate('/onboarding')}>
-            Let's Go
+            Let's Play
           </button>
         )}
 

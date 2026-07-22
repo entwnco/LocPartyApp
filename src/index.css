@@ -17,7 +17,7 @@
   --text: #f5f1e8;
   --text-dim: #b9afc4;
 
-  --brand: #f2b33d;
+  --brand: #ff7a1a;
   --brand-ink: #17130d;
 
   --success: #3ecf8e;
@@ -25,7 +25,7 @@
   --warn: #f2b33d;
 
   /* default accent before a relationship theme is chosen */
-  --accent: #f2b33d;
+  --accent: #ff7a1a;
   --accent-ink: #17130d;
 
   --radius: 10px;
@@ -57,6 +57,11 @@
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  /* bumps every rem-based size app-wide for legibility */
+  font-size: 18px;
 }
 
 html,
@@ -189,6 +194,11 @@ textarea {
 
 .entrance-title {
   font-size: clamp(2.15rem, 10vw, 2.8rem);
+}
+
+.entrance-content .eyebrow {
+  border-left: none;
+  padding-left: 0;
 }
 
 @media (max-height: 760px) {
