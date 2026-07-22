@@ -178,8 +178,8 @@ textarea {
 }
 
 .entrance-logo {
-  width: 112px;
-  height: 112px;
+  width: 150px;
+  height: 150px;
   object-fit: contain;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28));
 }
@@ -215,8 +215,8 @@ textarea {
   }
 
   .entrance-logo {
-    width: 88px;
-    height: 88px;
+    width: 120px;
+    height: 120px;
   }
 
   .entrance-welcome-art {
