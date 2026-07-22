@@ -95,19 +95,19 @@ export default function OnboardingFlow() {
       {step === 1 && (
         <div className="stack">
           <span className="eyebrow">Step 2 of 4</span>
-          <h2>This is how the game works</h2>
+          <h1 className="onboarding-hero-title">How to Play</h1>
           <p>
-            You've already earned <strong>{pointsTotal} points</strong> just for showing up and giving us your name.
-            That's the game: little actions all night long earn you points.
+            You just scored <strong>{pointsTotal} points</strong> for showing up — and that's just the start. All
+            night long, easy little moves stack up points and unlock surprises.
           </p>
           <p>
-            Points and raffle entries are two different things. Points track your progress, unlock new activities,
-            and land you on the leaderboard. Raffle entries are your odds at real prizes — you earn those separately
-            by doing things like visiting vendors, finishing challenges, and more.
+            Your scavenger hunt is your map through the Loc Party: vendors to visit, challenges to complete, hidden
+            moments to catch. Points build your status on the leaderboard. Raffle entries build your shot at real
+            prizes. Go chase both.
           </p>
-          <p>Next up: adding a photo and sharing your relationship status both earn you more points too.</p>
+          <p>Next: drop a photo and your relationship status for even more points.</p>
           <button className="btn btn-primary btn-block" onClick={next}>
-            Got it — keep going
+            Let's do this!
           </button>
         </div>
       )}

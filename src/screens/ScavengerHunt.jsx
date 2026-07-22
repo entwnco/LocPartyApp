@@ -9,8 +9,11 @@ export default function ScavengerHunt() {
     <div className="screen">
       <div>
         <span className="eyebrow">Scavenger hunt</span>
-        <h1>Play &amp; unlock</h1>
-        <p>New challenges appear as the night goes on — check back often.</p>
+        <h1>Your map through the Loc Party</h1>
+        <p>
+          Complete challenges, visit vendors, and catch hidden moments to earn points and raffle entries. Tap any
+          card below to jump in — new ones unlock as the night goes on.
+        </p>
       </div>
 
       {sorted.length === 0 ? (

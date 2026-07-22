@@ -4,7 +4,7 @@ import { RELATIONSHIP_STATUSES } from '../../data/config.js';
 import BackHeader from './BackHeader.jsx';
 
 export default function Profile() {
-  const { guest, updateGuest, setRelationshipStatus, addProfilePhoto, uploadLook, content } = useAppState();
+  const { guest, updateGuest, setRelationshipStatus, addProfilePhoto, content } = useAppState();
   const [displayName, setDisplayName] = useState(guest.displayName);
   const [busy, setBusy] = useState(false);
 
@@ -38,16 +38,6 @@ export default function Profile() {
         <label className="upload-box" style={{ display: 'block' }}>
           {guest.photoDataUrl ? <img src={guest.photoDataUrl} alt="Profile" /> : <span>{busy ? 'Loading…' : 'Tap to upload'}</span>}
           <input type="file" accept="image/*" hidden onChange={(e) => handlePhoto(e, addProfilePhoto)} />
-        </label>
-      </div>
-
-      <div className="field">
-        <label>
-          Loc Party look {!guest.lookPhotoDataUrl && `(+${content.pointValues.uploadLook} pts + a raffle entry)`}
-        </label>
-        <label className="upload-box" style={{ display: 'block' }}>
-          {guest.lookPhotoDataUrl ? <img src={guest.lookPhotoDataUrl} alt="Look" /> : <span>{busy ? 'Loading…' : 'Tap to upload'}</span>}
-          <input type="file" accept="image/*" hidden onChange={(e) => handlePhoto(e, uploadLook)} />
         </label>
       </div>
 

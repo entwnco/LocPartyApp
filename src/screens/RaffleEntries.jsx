@@ -1,9 +1,21 @@
+import { useState } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 
 export default function RaffleEntries() {
-  const { entryCount, entries, content, guest } = useAppState();
+  const { entryCount, entries, content, guest, pointsTotal, buyRaffleEntry } = useAppState();
   const { raffleConfig } = content;
   const isWinner = raffleConfig.status === 'drawn' && raffleConfig.announced && raffleConfig.winnerGuestId === guest.id;
+  const buyCost = content.pointValues.buyEntryCost ?? 50;
+  const [busy, setBusy] = useState(false);
+
+  async function handleBuy() {
+    setBusy(true);
+    try {
+      await buyRaffleEntry(1);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="screen">
@@ -22,6 +34,25 @@ export default function RaffleEntries() {
 
       {raffleConfig.status === 'drawn' && raffleConfig.announced && !isWinner && (
         <div className="banner-demo">The raffle has been drawn. Check Announcements for the winner.</div>
+      )}
+
+      {raffleConfig.status === 'open' && (
+        <div className="card flat">
+          <div className="row-between">
+            <span>Your points</span>
+            <strong>{pointsTotal}</strong>
+          </div>
+          <hr className="divider" />
+          <p style={{ margin: '0 0 10px' }}>Spend points for extra raffle entries — {buyCost} pts each.</p>
+          <button
+            className="btn btn-primary btn-block"
+            disabled={busy || pointsTotal < buyCost}
+            onClick={handleBuy}
+          >
+            {busy ? 'Buying…' : `Buy 1 entry — ${buyCost} pts`}
+          </button>
+          {pointsTotal < buyCost && <p className="field-hint">Not enough points yet.</p>}
+        </div>
       )}
 
       <div className="card flat">

@@ -550,7 +550,7 @@ export function subscribeToLiveChanges(onChange, client = supabase) {
   ];
   const channel = client.channel('loc-party-live');
   tables.forEach((table) => {
-    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onChange(table));
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => onChange(table, payload));
   });
   channel.subscribe();
   return () => client.removeChannel(channel);

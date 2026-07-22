@@ -195,6 +195,11 @@ textarea {
   font-size: clamp(2.15rem, 10vw, 2.8rem);
 }
 
+.onboarding-hero-title {
+  font-size: clamp(2rem, 11vw, 2.6rem);
+  line-height: 1.05;
+}
+
 .relationship-status-art {
   align-self: center;
   display: block;
@@ -640,6 +645,74 @@ textarea {
   100% {
     transform: translateY(105vh) rotate(540deg);
     opacity: 0.9;
+  }
+}
+
+/* ---- full-screen takeover ---- */
+.takeover-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 24px;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--accent) 35%, var(--bg)) 0%, var(--bg) 70%);
+  animation: takeoverIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.takeover-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 380px;
+}
+
+.takeover-kicker {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.takeover-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: clamp(2.2rem, 11vw, 3.2rem);
+  line-height: 1.05;
+  color: var(--text);
+  margin: 0;
+  animation: takeoverPulse 1.4s ease-in-out infinite;
+}
+
+.takeover-body {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+
+@keyframes takeoverIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes takeoverPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
   }
 }
 

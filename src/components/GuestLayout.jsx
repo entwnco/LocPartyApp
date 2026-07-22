@@ -3,6 +3,7 @@ import { useAppState } from '../state/AppState.jsx';
 import TopBar from './TopBar.jsx';
 import BottomNav from './BottomNav.jsx';
 import Celebration from './Celebration.jsx';
+import Takeover from './Takeover.jsx';
 
 export default function GuestLayout() {
   const { guest, ready } = useAppState();
@@ -15,6 +16,7 @@ export default function GuestLayout() {
       <Outlet />
       <BottomNav />
       <Celebration />
+      <Takeover />
     </div>
   );
 }

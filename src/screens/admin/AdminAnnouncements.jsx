@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAdminState } from '../../state/AdminState.jsx';
 
 function blank() {
-  return { id: null, title: '', body: '', active: true };
+  return { id: null, title: '', body: '', active: true, priority: false };
 }
 
 export default function AdminAnnouncements() {
@@ -32,6 +32,14 @@ export default function AdminAnnouncements() {
         <div className="field"><label>Title</label><input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></div>
         <div className="field"><label>Body</label><textarea rows={4} value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} /></div>
         <label className="row" style={{ gap: 8 }}><input type="checkbox" checked={editing.active} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} /> Active</label>
+        <label className="row" style={{ gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={!!editing.priority}
+            onChange={(e) => setEditing({ ...editing, priority: e.target.checked })}
+          />
+          Priority — full-screen takeover on every guest's phone
+        </label>
         <div className="row" style={{ gap: 10 }}>
           <button className="btn btn-secondary" onClick={() => setEditing(null)} disabled={busy}>Cancel</button>
           <button className="btn btn-primary" disabled={!editing.title.trim() || busy} onClick={() => save(editing)}>{busy ? 'Posting…' : 'Post'}</button>
@@ -48,7 +56,10 @@ export default function AdminAnnouncements() {
       </div>
       {content.announcements.map((a) => (
         <div key={a.id} className="card flat">
-          <span className="pill-status on">{a.active ? 'Active' : 'Off'}</span>
+          <div className="row" style={{ gap: 6 }}>
+            <span className="pill-status on">{a.active ? 'Active' : 'Off'}</span>
+            {a.priority && <span className="tag">Takeover</span>}
+          </div>
           <h3 style={{ margin: '8px 0 4px' }}>{a.title || '(untitled)'}</h3>
           <p className="field-hint">{a.body}</p>
           <div className="row" style={{ gap: 6 }}>

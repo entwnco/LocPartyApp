@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ensureGuestSession } from '../lib/supabaseClient.js';
 import * as api from '../lib/api.js';
 import { fileToResizedBlob } from '../lib/image.js';
@@ -41,6 +41,12 @@ export function AppStateProvider({ children }) {
   const [celebrations, setCelebrations] = useState([]);
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState(null);
+  const [takeover, setTakeover] = useState(null);
+
+  const guestRef = useRef(null);
+  useEffect(() => {
+    guestRef.current = guest;
+  }, [guest]);
 
   const pushCelebration = useCallback((message, kind = 'points') => {
     const id = `cel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -49,6 +55,8 @@ export function AppStateProvider({ children }) {
       setCelebrations((list) => list.filter((c) => c.id !== id));
     }, 2200);
   }, []);
+
+  const dismissTakeover = useCallback(() => setTakeover(null), []);
 
   const loadContent = useCallback(async () => {
     const c = await api.fetchAllContent();
@@ -82,12 +90,45 @@ export function AppStateProvider({ children }) {
         if (g) await loadGuestActivity(g.id);
         if (cancelled) return;
 
-        unsubscribe = api.subscribeToLiveChanges(async (table) => {
+        unsubscribe = api.subscribeToLiveChanges((table, payload) => {
           if (['challenges', 'vendors', 'schedule_items', 'announcements', 'prizes', 'raffle_config', 'app_config'].includes(table)) {
             loadContent();
           }
-          if (g && ['points_ledger', 'raffle_ledger', 'completions', 'triggered_hidden'].includes(table)) {
-            loadGuestActivity(g.id);
+          const currentGuest = guestRef.current;
+          if (currentGuest && ['points_ledger', 'raffle_ledger', 'completions', 'triggered_hidden'].includes(table)) {
+            loadGuestActivity(currentGuest.id);
+          }
+
+          // Full-screen takeover: only fires on the live transition (not on
+          // every reload), so it feels like a real "moment" rather than a
+          // sticky modal. Priority announcements and a freshly-announced
+          // raffle winner both qualify.
+          if (table === 'announcements' && payload?.new) {
+            const row = payload.new;
+            const prev = payload.old;
+            const becameLoud = row.active && row.priority && !(prev && prev.active && prev.priority);
+            if (becameLoud) {
+              setTakeover({ type: 'announcement', kicker: 'Announcement', title: row.title, body: row.body });
+            }
+          }
+
+          if (table === 'raffle_config' && payload?.new) {
+            const row = payload.new;
+            const prev = payload.old;
+            const justAnnounced = row.announced && !(prev && prev.announced);
+            if (justAnnounced) {
+              const isWinner = currentGuest && row.winner_guest_id === currentGuest.id;
+              setTakeover(
+                isWinner
+                  ? { type: 'raffle-winner', kicker: 'Raffle drawn', title: "You won! 🎉", body: row.prize }
+                  : {
+                      type: 'raffle-announced',
+                      kicker: 'Raffle drawn',
+                      title: 'The winner has been announced!',
+                      body: 'Head to Announcements to see who took it home.',
+                    }
+              );
+            }
           }
         });
       } catch (err) {
@@ -202,6 +243,22 @@ export function AppStateProvider({ children }) {
   const pointsTotal = useMemo(() => pointsLedger.reduce((s, e) => s + e.amount, 0), [pointsLedger]);
   const entryCount = useMemo(() => raffleLedger.reduce((s, e) => s + e.count, 0), [raffleLedger]);
 
+  const buyRaffleEntry = useCallback(
+    async (quantity = 1) => {
+      if (!guest || quantity < 1) return { ok: false };
+      const cost = content.pointValues.buyEntryCost ?? 50;
+      const totalCost = cost * quantity;
+      if (pointsTotal < totalCost) return { ok: false, reason: 'insufficient' };
+      const key = `buyEntry:${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await api.awardPoints(guest.id, key, -totalCost, `Bought ${quantity} raffle ${quantity === 1 ? 'entry' : 'entries'}`);
+      await api.awardEntries(guest.id, key, quantity, 'Bought with points');
+      await loadGuestActivity(guest.id);
+      pushCelebration(`+${quantity} raffle ${quantity === 1 ? 'entry' : 'entries'}!`, 'entry');
+      return { ok: true };
+    },
+    [guest, content, pointsTotal, pushCelebration, loadGuestActivity]
+  );
+
   const completedChallengeIds = useMemo(
     () => completions.filter((c) => c.status === 'approved').map((c) => c.challengeId),
     [completions]
@@ -225,6 +282,8 @@ export function AppStateProvider({ children }) {
     celebrations,
     ready,
     bootError,
+    takeover,
+    dismissTakeover,
     refreshContent,
     createGuest,
     updateGuest,
@@ -232,6 +291,7 @@ export function AppStateProvider({ children }) {
     uploadLook,
     addProfilePhoto,
     completeChallenge,
+    buyRaffleEntry,
     pushCelebration,
     pointsTotal,
     pointsHistory: pointsLedger,

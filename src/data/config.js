@@ -15,7 +15,7 @@
 
 export const EVENT_INFO = {
   name: 'The Loc Party',
-  tagline: "Let's Play",
+  tagline: 'A night of color, culture & connection.',
   dateLabel: 'TBD — placeholder date',
   venueLabel: 'TBD — placeholder venue',
 };
