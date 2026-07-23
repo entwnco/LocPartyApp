@@ -139,8 +139,7 @@ export default function OnboardingFlow() {
           <span className="eyebrow">Step 4 of 4</span>
           <h2>Relationship status</h2>
           <p>
-            +{relationshipPoints} points for this one. It also changes your app's accent color tonight — and quietly
-            places you in a group for something later. We'll only ever share anonymous totals, never your individual
+            +{relationshipPoints} points for this one. We'll only ever share anonymous totals, never your individual
             answer.
           </p>
           <div className="choice-grid">
