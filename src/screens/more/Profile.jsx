@@ -71,6 +71,15 @@ export default function Profile() {
           ))}
         </div>
       </div>
+
+      <hr className="divider" />
+      <div className="field">
+        <label>Save to your home screen</label>
+        <p className="field-hint">
+          On iPhone, tap Share then "Add to Home Screen." On Android, tap the menu then "Add to Home Screen" or
+          "Install app."
+        </p>
+      </div>
     </div>
   );
 }
