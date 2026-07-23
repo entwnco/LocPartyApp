@@ -389,6 +389,21 @@ export async function drawRaffleWinner(client = supabase) {
   return data?.[0] || null;
 }
 
+// Privacy-safe leaderboard — the `get_leaderboard` Postgres function only
+// ever returns display_name + total points (never relationship status,
+// photos, or anything else guests share privately), so this is safe to
+// call from any guest's anonymous session.
+export async function fetchLeaderboard(limit = 100, client = supabase) {
+  const { data, error } = await client.rpc('get_leaderboard', { limit_count: limit });
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    guestId: row.guest_id,
+    displayName: row.display_name,
+    totalPoints: row.total_points,
+    rank: row.rank,
+  }));
+}
+
 export async function resetRaffle(client = supabase) {
   const { error: e1 } = await client.from('raffle_ledger').delete().neq('guest_id', '00000000-0000-0000-0000-000000000000');
   if (e1) throw e1;

@@ -3,6 +3,7 @@ import { useAdminState } from '../../state/AdminState.jsx';
 
 const TABS = [
   { to: '/admin/overview', label: 'Overview' },
+  { to: '/admin/guests', label: 'Guests' },
   { to: '/admin/challenges', label: 'Challenges' },
   { to: '/admin/vendors', label: 'Vendors' },
   { to: '/admin/schedule', label: 'Schedule' },

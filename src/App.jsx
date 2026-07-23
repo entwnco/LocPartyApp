@@ -24,6 +24,7 @@ import Prizes from './screens/more/Prizes.jsx';
 import AdminLogin from './screens/admin/AdminLogin.jsx';
 import AdminLayout from './screens/admin/AdminLayout.jsx';
 import AdminOverview from './screens/admin/AdminOverview.jsx';
+import AdminGuests from './screens/admin/AdminGuests.jsx';
 import AdminChallenges from './screens/admin/AdminChallenges.jsx';
 import AdminVendors from './screens/admin/AdminVendors.jsx';
 import AdminSchedule from './screens/admin/AdminSchedule.jsx';
@@ -69,6 +70,7 @@ export default function App() {
           <Route index element={<AdminLogin />} />
           <Route element={<AdminLayout />}>
             <Route path="overview" element={<AdminOverview />} />
+            <Route path="guests" element={<AdminGuests />} />
             <Route path="challenges" element={<AdminChallenges />} />
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="schedule" element={<AdminSchedule />} />
