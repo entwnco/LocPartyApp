@@ -20,17 +20,17 @@ export const supabaseAdmin = createClient(url, key, {
 });
 
 /**
- * Every guest device gets its own anonymous Supabase Auth session — no
- * email, no password, nothing for the guest to do. supabase-js persists
- * the session in localStorage automatically, so reopening the app (or
- * relaunching the installed PWA) restores the same guest identity.
- * Admins sign in with a real email/password instead (see AdminLogin),
- * through the separate `supabaseAdmin` client above.
+ * Guests create a real (email + password) account — no anonymous
+ * sign-in. This is required for two reasons: it's the only way a guest
+ * can recover their profile if they switch devices or clear their
+ * browser, and (just as important) anonymous logins turned out to be
+ * unreliable for photo uploads on this project, while real accounts
+ * have always worked fine. supabase-js persists the session in
+ * localStorage automatically, so reopening the app (or relaunching the
+ * installed PWA) restores the same guest identity without needing to
+ * log in again.
  */
-export async function ensureGuestSession() {
+export async function getGuestSession() {
   const { data } = await supabase.auth.getSession();
-  if (data.session) return data.session;
-  const { data: signInData, error } = await supabase.auth.signInAnonymously();
-  if (error) throw error;
-  return signInData.session;
+  return data.session;
 }

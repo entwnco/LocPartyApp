@@ -8,11 +8,19 @@ const STEP_COUNT = 4;
 export default function OnboardingFlow() {
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nameError, setNameError] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [busy, setBusy] = useState(false);
-  const { createGuest, addProfilePhoto, setRelationshipStatus, pointsTotal, content } = useAppState();
+  const { session, guest, createGuest, completeProfile, addProfilePhoto, setRelationshipStatus, pointsTotal, content } =
+    useAppState();
   const navigate = useNavigate();
+
+  // Edge case: they already logged in (real account exists) but never
+  // finished creating a profile — just need their name, no new signup.
+  const alreadyHasSession = !!session && !guest;
 
   const next = () => setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -26,10 +34,26 @@ export default function OnboardingFlow() {
 
   async function handleNameSubmit() {
     if (!displayName.trim()) return;
+    if (!alreadyHasSession && (!email.trim() || password.length < 6)) return;
     setBusy(true);
+    setNameError('');
     try {
-      await createGuest({ displayName: displayName.trim() });
+      if (alreadyHasSession) {
+        await completeProfile(displayName.trim());
+      } else {
+        await createGuest({ displayName: displayName.trim(), email: email.trim(), password });
+      }
       next();
+    } catch (err) {
+      console.error('Account/profile creation failed:', err);
+      const msg = err?.message || '';
+      if (/already registered|already exists/i.test(msg)) {
+        setNameError('That email already has an account — head back and use "Already checked in? Log in" instead.');
+      } else if (/duplicate key.*display_name|guests_display_name_unique/i.test(msg)) {
+        setNameError('That name is taken by another guest — try adding a last initial or nickname.');
+      } else {
+        setNameError(msg || 'Something went wrong — try again.');
+      }
     } finally {
       setBusy(false);
     }
@@ -73,8 +97,12 @@ export default function OnboardingFlow() {
       {step === 0 && (
         <div className="stack">
           <span className="eyebrow">Step 1 of 4</span>
-          <h2>What should we call you?</h2>
-          <p>This shows up on your profile and the leaderboard.</p>
+          <h2>{alreadyHasSession ? 'What should we call you?' : "Let's get you set up"}</h2>
+          <p>
+            {alreadyHasSession
+              ? 'This shows up on your profile and the leaderboard.'
+              : "A real (tiny) account so you can find your profile again if you switch phones — this shows up on your profile and the leaderboard."}
+          </p>
           <div className="field">
             <label htmlFor="displayName">Display name</label>
             <input
@@ -86,7 +114,38 @@ export default function OnboardingFlow() {
               autoFocus
             />
           </div>
-          <button className="btn btn-primary btn-block" disabled={!displayName.trim() || busy} onClick={handleNameSubmit}>
+          {!alreadyHasSession && (
+            <>
+              <div className="field">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@email.com"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                />
+              </div>
+            </>
+          )}
+          {nameError && <p style={{ color: 'var(--danger, #e05353)' }}>{nameError}</p>}
+          <button
+            className="btn btn-primary btn-block"
+            disabled={!displayName.trim() || (!alreadyHasSession && (!email.trim() || password.length < 6)) || busy}
+            onClick={handleNameSubmit}
+          >
             {busy ? 'Just a sec…' : 'Continue'}
           </button>
         </div>

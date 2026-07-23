@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
 import { EVENT_INFO } from '../data/config.js';
 
@@ -50,9 +50,14 @@ export default function Entrance() {
               </button>
             </>
           ) : (
-            <button className="btn btn-primary btn-block" onClick={() => navigate('/onboarding')}>
-              Let's Play
-            </button>
+            <>
+              <button className="btn btn-primary btn-block" onClick={() => navigate('/onboarding')}>
+                Let's Play
+              </button>
+              <p className="field-hint" style={{ textAlign: 'center' }}>
+                Already checked in on another device? <Link to="/login">Log in</Link>
+              </p>
+            </>
           )}
         </div>
       </div>

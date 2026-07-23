@@ -5,6 +5,7 @@ import ThemeStyleInjector from './components/ThemeStyleInjector.jsx';
 import GuestLayout from './components/GuestLayout.jsx';
 
 import Entrance from './screens/Entrance.jsx';
+import Login from './screens/Login.jsx';
 import OnboardingFlow from './screens/onboarding/OnboardingFlow.jsx';
 import Dashboard from './screens/Dashboard.jsx';
 import ScavengerHunt from './screens/ScavengerHunt.jsx';
@@ -40,6 +41,7 @@ export default function App() {
       <ThemeStyleInjector />
       <Routes>
         <Route path="/" element={<Entrance />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<OnboardingFlow />} />
 
         <Route element={<GuestLayout />}>

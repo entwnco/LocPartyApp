@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ensureGuestSession } from '../lib/supabaseClient.js';
+import { supabase, getGuestSession } from '../lib/supabaseClient.js';
 import * as api from '../lib/api.js';
 import { fileToResizedBlob } from '../lib/image.js';
 import { visibleChallengesFor } from '../lib/unlock.js';
@@ -35,6 +35,7 @@ const EMPTY_CONTENT = {
 
 export function AppStateProvider({ children }) {
   const [guest, setGuest] = useState(null);
+  const [session, setSession] = useState(null);
   const [content, setContent] = useState(EMPTY_CONTENT);
   const [completions, setCompletions] = useState([]);
   const [pointsLedger, setPointsLedger] = useState([]);
@@ -78,15 +79,18 @@ export function AppStateProvider({ children }) {
     setTriggeredHiddenIds(hidden);
   }, []);
 
-  // boot: anonymous session -> content -> this device's guest row (if any)
+  // boot: restore an existing session (if any) -> content -> this
+  // device's guest row. No auto sign-in anymore — a guest without a
+  // session just sees the Entrance screen's sign up / log in options.
   useEffect(() => {
     let unsubscribe;
     let cancelled = false;
     (async () => {
       try {
-        const session = await ensureGuestSession();
+        const existingSession = await getGuestSession();
+        setSession(existingSession);
         await loadContent();
-        const g = await api.fetchGuestByAuthId(session.user.id);
+        const g = existingSession ? await api.fetchGuestByAuthId(existingSession.user.id) : null;
         if (cancelled) return;
         setGuest(g);
         if (g) await loadGuestActivity(g.id);
@@ -151,10 +155,9 @@ export function AppStateProvider({ children }) {
 
   const refreshContent = useCallback(() => loadContent(), [loadContent]);
 
-  const createGuest = useCallback(
-    async (profile) => {
-      const session = await ensureGuestSession();
-      const g = await api.createGuestRow(session.user.id, profile.displayName);
+  const finishNewGuest = useCallback(
+    async (authUserId, displayName) => {
+      const g = await api.createGuestRow(authUserId, displayName);
       setGuest(g);
       const r = await api.awardPoints(g.id, 'createProfile', content.pointValues.createProfile, 'Created your party profile');
       await api.awardEntries(g.id, 'registration', content.raffleEntrySources.registration.entries, content.raffleEntrySources.registration.label);
@@ -163,6 +166,45 @@ export function AppStateProvider({ children }) {
       return g;
     },
     [content, pushCelebration, loadGuestActivity]
+  );
+
+  // Brand-new guest: create their real account, then their profile row.
+  const createGuest = useCallback(
+    async ({ displayName, email, password }) => {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.session) {
+        throw new Error('Account created, but email confirmation is required — check with an event host.');
+      }
+      setSession(data.session);
+      return finishNewGuest(data.session.user.id, displayName);
+    },
+    [finishNewGuest]
+  );
+
+  // Returning guest signing in on a new device/browser.
+  const loginGuest = useCallback(
+    async ({ email, password }) => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setSession(data.session);
+      const g = await api.fetchGuestByAuthId(data.session.user.id);
+      setGuest(g);
+      if (g) await loadGuestActivity(g.id);
+      return g;
+    },
+    [loadGuestActivity]
+  );
+
+  // Edge case: a real account exists (they logged in) but never
+  // finished creating their profile — just collect the name, no new
+  // signup needed since the session is already there.
+  const completeProfile = useCallback(
+    async (displayName) => {
+      if (!session) throw new Error('No active session.');
+      return finishNewGuest(session.user.id, displayName);
+    },
+    [session, finishNewGuest]
   );
 
   const updateGuest = useCallback(
@@ -279,6 +321,7 @@ export function AppStateProvider({ children }) {
 
   const value = {
     guest,
+    session,
     content,
     completions,
     celebrations,
@@ -288,6 +331,8 @@ export function AppStateProvider({ children }) {
     dismissTakeover,
     refreshContent,
     createGuest,
+    loginGuest,
+    completeProfile,
     updateGuest,
     setRelationshipStatus,
     uploadLook,
