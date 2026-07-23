@@ -542,6 +542,8 @@ export async function fetchAllContent(client = supabase) {
 
 // ---- photo uploads (real storage, not base64-in-a-column) ---------------------
 
+// Used by the admin panel only (vendor logos) via the supabaseAdmin
+// client, which has always uploaded to storage reliably.
 export async function uploadPhoto(authUserId, blob, filename, client = supabase) {
   const path = `${authUserId}/${filename}`;
   const { error } = await client.storage.from('party-photos').upload(path, blob, {
@@ -551,6 +553,34 @@ export async function uploadPhoto(authUserId, blob, filename, client = supabase)
   if (error) throw error;
   const { data } = client.storage.from('party-photos').getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      // reader.result is a data: URL — strip the "data:...;base64," prefix.
+      const base64 = String(reader.result).split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Guests upload through this instead — direct guest-to-storage writes
+// were unreliable on this project (see upload-photo edge function for
+// the full story). This calls a server-side function that verifies the
+// guest's own login token and does the actual write with full access,
+// scoped to that guest's own folder only.
+export async function uploadGuestPhoto(blob, filename, client = supabase) {
+  const dataBase64 = await blobToBase64(blob);
+  const { data, error } = await client.functions.invoke('upload-photo', {
+    body: { filename, contentType: blob.type || 'image/jpeg', dataBase64 },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.publicUrl;
 }
 
 // ---- realtime ---------------------------------------------------------------

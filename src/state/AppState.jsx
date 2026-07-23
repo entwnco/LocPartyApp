@@ -234,7 +234,7 @@ export function AppStateProvider({ children }) {
     async (file) => {
       if (!guest) return null;
       const blob = await fileToResizedBlob(file);
-      const url = await api.uploadPhoto(guest.authUserId, blob, 'profile.jpg');
+      const url = await api.uploadGuestPhoto(blob, 'profile.jpg');
       const next = await updateGuest({ photoDataUrl: url });
       const pv = content.pointValues.profilePhoto;
       const r = await api.awardPoints(next.id, 'profilePhoto', pv, 'Added a profile photo');
@@ -249,7 +249,7 @@ export function AppStateProvider({ children }) {
     async (file) => {
       if (!guest) return null;
       const blob = await fileToResizedBlob(file);
-      const url = await api.uploadPhoto(guest.authUserId, blob, 'look.jpg');
+      const url = await api.uploadGuestPhoto(blob, 'look.jpg');
       const next = await updateGuest({ lookPhotoDataUrl: url });
       const pv = content.pointValues.uploadLook;
       const sources = content.raffleEntrySources.uploadLook;
