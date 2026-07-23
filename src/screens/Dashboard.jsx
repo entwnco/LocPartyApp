@@ -11,8 +11,8 @@ export default function Dashboard() {
     <div className="screen">
       <div>
         <span className="eyebrow">Welcome</span>
-        <h1>Hey, {guest.displayName} 👋</h1>
-        <p>You're checked in and the party's live. Here's where things stand.</p>
+        <h1>Hey, {guest.displayName} 👋🏾</h1>
+        <p>You're locked in and the party is LIVE! Here's where things stand.</p>
       </div>
 
       <div className="row" style={{ gap: 10 }}>
