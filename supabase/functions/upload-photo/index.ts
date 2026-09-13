@@ -9,8 +9,15 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 // their own login token. It only ever writes to that caller's own folder,
 // and only accepts the two known filenames, so one guest can never
 // overwrite another guest's photo.
+//
+// Admin vendor-logo uploads hit the exact same direct-storage-write
+// unreliability (confirmed: policies were correct, upload still rejected),
+// so this function also accepts vendor-<id>.jpg filenames -- gated to
+// verified admins only, via the same is_admin() check the rest of the app
+// already uses.
 
-const ALLOWED_FILENAMES = ['profile.jpg', 'look.jpg']
+const GUEST_FILENAMES = ['profile.jpg', 'look.jpg']
+const VENDOR_FILENAME_RE = /^vendor-[a-zA-Z0-9_-]+\.jpg$/
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = {
@@ -52,12 +59,35 @@ Deno.serve(async (req: Request) => {
     const body = await req.json()
     const { filename, contentType, dataBase64 } = body || {}
 
-    if (!filename || !ALLOWED_FILENAMES.includes(filename)) {
+    const isGuestFilename = typeof filename === 'string' && GUEST_FILENAMES.includes(filename)
+    const isVendorFilename = typeof filename === 'string' && VENDOR_FILENAME_RE.test(filename)
+
+    if (!isGuestFilename && !isVendorFilename) {
       return new Response(JSON.stringify({ error: 'Invalid filename' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+
+    // Vendor logos are an admin-only operation -- confirm this caller is
+    // actually an admin (via the same admins table / is_admin() the rest
+    // of the app relies on) before writing anything.
+    if (isVendorFilename) {
+      const { data: isAdmin, error: adminCheckError } = await adminClient
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (adminCheckError || !isAdmin) {
+        return new Response(JSON.stringify({ error: 'Not authorized to upload vendor logos.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
     if (!dataBase64 || typeof dataBase64 !== 'string') {
       return new Response(JSON.stringify({ error: 'Missing image data' }), {
         status: 400,
@@ -84,7 +114,9 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey)
+    // Guest photos live under the guest's own folder; vendor logos live
+    // under the uploading admin's folder -- matches the path convention
+    // already used by every existing vendor logo object in the bucket.
     const path = `${userId}/${filename}`
     const { error: uploadError } = await adminClient.storage.from('party-photos').upload(path, bytes, {
       upsert: true,

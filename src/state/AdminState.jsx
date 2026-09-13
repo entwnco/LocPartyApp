@@ -136,7 +136,7 @@ export function AdminStateProvider({ children }) {
       if (!session) return null;
       const blob = await fileToResizedBlob(file, 800, 0.85);
       const filename = `vendor-${vendorId || Date.now()}.jpg`;
-      return api.uploadPhoto(session.user.id, blob, filename, supabaseAdmin);
+      return api.uploadGuestPhoto(blob, filename, supabaseAdmin);
     },
     [session]
   );

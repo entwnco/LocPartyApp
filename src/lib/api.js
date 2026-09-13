@@ -542,8 +542,13 @@ export async function fetchAllContent(client = supabase) {
 
 // ---- photo uploads (real storage, not base64-in-a-column) ---------------------
 
-// Used by the admin panel only (vendor logos) via the supabaseAdmin
-// client, which has always uploaded to storage reliably.
+// NOTE: direct client -> Storage writes (this function) turned out to be
+// unreliable on this project for BOTH guest and admin sessions -- storage
+// permission checks rejected uploads even with correct policies in place
+// and a genuinely authenticated session. Nothing currently calls this;
+// kept only for reference. Use uploadGuestPhoto() below (which routes
+// through the upload-photo edge function) for all new uploads, guest or
+// admin.
 export async function uploadPhoto(authUserId, blob, filename, client = supabase) {
   const path = `${authUserId}/${filename}`;
   const { error } = await client.storage.from('party-photos').upload(path, blob, {
@@ -568,11 +573,13 @@ function blobToBase64(blob) {
   });
 }
 
-// Guests upload through this instead — direct guest-to-storage writes
-// were unreliable on this project (see upload-photo edge function for
-// the full story). This calls a server-side function that verifies the
-// guest's own login token and does the actual write with full access,
-// scoped to that guest's own folder only.
+// Guests AND admins (vendor logos) upload through this — direct-to-storage
+// writes were unreliable on this project for both (see upload-photo edge
+// function for the full story). This calls a server-side function that
+// verifies the caller's own login token and does the actual write with
+// full access. Guest photos are scoped to that guest's own folder; vendor
+// logo filenames additionally require the caller to be an admin (checked
+// server-side, not trusted from the client).
 export async function uploadGuestPhoto(blob, filename, client = supabase) {
   const dataBase64 = await blobToBase64(blob);
   const { data, error } = await client.functions.invoke('upload-photo', {
