@@ -9,6 +9,7 @@ import Login from './screens/Login.jsx';
 import OnboardingFlow from './screens/onboarding/OnboardingFlow.jsx';
 import Dashboard from './screens/Dashboard.jsx';
 import ScavengerHunt from './screens/ScavengerHunt.jsx';
+import BingoPreview from './screens/BingoPreview.jsx';
 import ChallengeDetail from './screens/ChallengeDetail.jsx';
 import PointsProgress from './screens/PointsProgress.jsx';
 import RaffleEntries from './screens/RaffleEntries.jsx';
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/" element={<Entrance />} />
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<OnboardingFlow />} />
+        <Route path="/bingo-preview" element={<BingoPreview />} />
 
         <Route element={<GuestLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />

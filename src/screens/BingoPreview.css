@@ -1,0 +1,125 @@
+.bingo-preview {
+  --b-teal: #0f686b;
+  --b-neon: #8be9d9;
+  --b-orange: #ff8a41;
+  --b-ink: #101d20;
+  color: #f9f9fb;
+  font-family: var(--font-body, system-ui);
+  padding: 0 14px 50px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 560px;
+  min-height: 100vh;
+  background: #111b20;
+}
+.bingo-preview * { box-sizing: border-box; }
+.bingo-preview button { cursor: pointer; }
+.bingo-preview button:focus-visible { outline: 3px solid #8be9d9; outline-offset: 3px; }
+.bingo-hero {
+  margin: 0 -14px 16px;
+  min-height: 245px;
+  padding: 20px 22px 23px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  background: radial-gradient(ellipse at 90% 5%, rgba(255,174,78,.32), transparent 42%),
+    linear-gradient(142deg, #0f686b, #153f48 60%, #19232a);
+  border-bottom: 5px solid #f8ae54;
+}
+.bingo-back { color: #d8f4ee; font-size: .55rem; letter-spacing: .12em; font-weight: 800; margin-bottom: 26px; }
+.bingo-kicker { font: 800 .56rem var(--font-head, system-ui); letter-spacing: .16em; color: #a1e6d9; }
+.bingo-hero h1 { font: 900 clamp(2.4rem, 15vw, 4.1rem)/.9 var(--font-head, system-ui); letter-spacing: -.065em; margin: 8px 0 10px; color: #fff; }
+.bingo-hero h1 span { display: block; color: #ffa35b; }
+.bingo-hero p { color: white; font-size: .8rem; letter-spacing: .025em; margin: 2px 0 15px; }
+.bingo-draft-label { padding: 7px 9px; border: 1px solid #bde7e2; border-radius: 4px; font: 800 .48rem var(--font-head); letter-spacing: .055em; color: white; }
+.bingo-panel { background: #1b2c33; border: 1px solid #38515a; border-radius: 13px; padding: 15px; margin-bottom: 15px; }
+.bingo-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 7px; font: 800 .63rem var(--font-head); color: #98e3da; letter-spacing: .075em; margin-bottom: 12px; }
+.bingo-tiny { font-size: .5rem; color: #aac1cb; letter-spacing: 0; text-align: right; }
+.bingo-track-buttons { display: flex; gap: 8px; }
+.bingo-track-button { flex: 1; background: #293c42; color: #d3dddf; border: 1px solid #48616a; border-radius: 9px; font: 800 1rem var(--font-head); padding: 12px 2px; }
+.bingo-track-button.selected { background: #fbb26e; color: #18282e; border-color: #fbb26e; }
+.bingo-track-description { margin-top: 13px; }
+.bingo-track-description strong { font: 900 1.15rem var(--font-head); color: #fff; }
+.bingo-track-description p { color: #aec6cb; font-size: .72rem; margin: 4px 0 0; }
+.bingo-start p { color: #d0dedf; font-size: .7rem; line-height: 1.45; margin: 0 0 12px; }
+.bingo-starters { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.bingo-starters button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 6px; padding: 14px; border-radius: 11px; border: 1px solid #558a83; background: linear-gradient(130deg, #244b4c, #173034); color: #fff; }
+.bingo-starters button:nth-child(2) { background: linear-gradient(130deg, #453547, #262d3c); border-color: #806280; }
+.bingo-starters button span { font-size: 1.5rem; }
+.bingo-starters button strong { font: 900 .7rem var(--font-head); }
+.bingo-starters button small { font: 500 .6rem var(--font-body); color: #dce9ec; }
+.bingo-board-section { margin: 20px 0; background: #142b30; border: 1px solid #42626a; border-radius: 15px; padding: 14px 10px; box-shadow: 0 15px 35px #050f14b3; }
+.bingo-board-heading { display: flex; justify-content: space-between; align-items: end; gap: 10px; padding: 0 4px 10px; }
+.bingo-board-heading h2 { color: #fff; font: 900 1.6rem/.9 var(--font-head); letter-spacing: .17em; margin: 6px 0 0; }
+.bingo-progress { text-align: right; display: flex; flex-direction: column; gap: 0; }
+.bingo-progress strong { font: 900 1.3rem var(--font-head); color: #fff; }
+.bingo-progress strong span { color: #8bb8b6; font-size: .72rem; }
+.bingo-progress small { color: #b8d8d5; font: 800 .5rem var(--font-head); letter-spacing: .13em; }
+.bingo-progress-bar { height: 7px; border-radius: 20px; background: #3b5155; overflow: hidden; margin: 1px 4px 12px; }
+.bingo-progress-bar span { display: block; height: 100%; border-radius: 20px; background: linear-gradient(90deg, #40a9a5, #fcb572); transition: width .3s; }
+.bingo-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; }
+.bingo-tile { min-width: 0; position: relative; aspect-ratio: 1/1.16; background: #254248; border: 1px solid #628084; border-radius: 8px; color: #fff; padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: background .12s, transform .12s; }
+.bingo-tile:active { transform: scale(.95); }
+.bingo-tile.center { background: linear-gradient(150deg, #0f686b, #2e9a91); border: 2px solid #f7b86a; box-shadow: inset 0 0 10px #02282a80; }
+.bingo-tile.stamped { background: #2f7169; border-color: #a9f6d9; }
+.bingo-tile.center.stamped { background: #d0954c; color: #1c2430; }
+.bingo-tile-icon { font-size: clamp(16px, 5vw, 23px); line-height: 1; }
+.bingo-tile-title { font: 800 clamp(8px,2.4vw,12px)/1.06 var(--font-head); width: 100%; word-break: normal; overflow-wrap: anywhere; text-align: center; }
+.bingo-tile.center .bingo-tile-title { font-weight: 900; }
+.bingo-tile small { font: 800 .4rem var(--font-head); color: #ffca7e; }
+.bingo-tick { position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; font: 900 10px/14px system-ui; background: #ffdd89; color: #182426; }
+.bingo-win-banner { margin: 12px 1px 0; display: flex; align-items: center; gap: 10px; padding: 12px; background: #1b3a41; border: 1px solid #456970; border-radius: 9px; }
+.bingo-win-banner.achieved { background: #1b5a4f; border-color: #c0e8a7; }
+.bingo-win-banner > span { font-size: 1.5rem; color: #ffa969; }
+.bingo-win-banner strong { font: 900 .72rem var(--font-head); color: #fff; }
+.bingo-win-banner p { font-size: .56rem; color: #c9dddd; line-height: 1.4; margin: 3px 0 0; }
+.bingo-board-bottom { padding: 13px 5px 3px; display: flex; justify-content: space-between; align-items: center; gap: 7px; }
+.bingo-board-bottom small { font: 500 .47rem var(--font-body); color: #b3cbd0; line-height: 1.35; }
+.bingo-board-bottom button { border: 0; background: transparent; padding: 7px 0; color: #f7b477; white-space: nowrap; font: 800 .52rem var(--font-head); }
+.bingo-crown-teaser { border-left: 4px solid #fcb46c; }
+.bingo-crown-teaser h2 { font: 900 1.45rem var(--font-head); margin: 8px 0; color: white; }
+.bingo-crown-teaser > p { font-size: .73rem; color: #d1e1e2; line-height: 1.45; }
+.bingo-shop-list { display: grid; gap: 6px; margin: 15px 0; }
+.bingo-shop-list > div { display: grid; grid-template-columns: 32px 1fr; grid-template-rows: auto auto; background: #263e46; padding: 10px; gap: 0 8px; border-radius: 8px; align-items: center; }
+.bingo-shop-list > div > span { grid-row: 1 / span 2; color: #ffb56c; font: 900 1rem var(--font-head); }
+.bingo-shop-list strong { color: white; font: 800 .8rem var(--font-head); }
+.bingo-shop-list small { color: #b8d2d6; font: 500 .55rem var(--font-body); }
+.bingo-action { width: 100%; border: none; border-radius: 8px; padding: 14px 10px; font: 900 .8rem var(--font-head); background: #fbb06e; color: #182a30; }
+.bingo-action:disabled { opacity: .45; cursor: not-allowed; }
+.bingo-disclaimer { display: block; margin-top: 10px; font: 500 .54rem/1.45 var(--font-body); color: #c9d5da; }
+.bingo-footer-note { font-size: .65rem; text-align: center; color: #99afb7; line-height: 1.5; margin: 15px 4px; }
+.bingo-modal-backdrop { position: fixed; z-index: 300; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: #050b0ce0; backdrop-filter: blur(5px); padding: 8px; }
+.bingo-modal { position: relative; width: 100%; max-width: 520px; max-height: min(88svh,800px); overflow: auto; padding: 24px 22px 28px; border-radius: 20px 20px 12px 12px; background: #1b3037; border: 1px solid #7eb3ab; box-shadow: 0 10px 60px #000b; }
+.bingo-close { position: absolute; right: 16px; top: 12px; background: transparent; color: #d7ece9; border: none; font: 400 1.7rem/1 system-ui; padding: 3px; }
+.bingo-modal-icon { font-size: 2.1rem; margin-bottom: 6px; }
+.bingo-modal h2 { font: 900 1.65rem var(--font-head); color: #fff; margin: 8px 0; }
+.bingo-modal h3 { font: 900 .62rem var(--font-head); color: #80e6d7; letter-spacing: .12em; margin: 12px 0 7px; }
+.bingo-modal blockquote { margin: 14px 0; padding: 14px; background: #28484d; border-left: 4px solid #fcb06e; font: 600 .8rem/1.5 var(--font-body); color: #fff; border-radius: 5px; }
+.bingo-modal > p { font-size: .8rem; color: #e0e9ec; line-height: 1.52; }
+.bingo-modal .bingo-next { padding: 12px; margin: 15px 0; background: #243e47; border-radius: 8px; }
+.bingo-next strong, .bingo-favors strong { font: 900 .6rem var(--font-head); letter-spacing: .1em; color: #f7bd80; }
+.bingo-next p { color: #e0e9ed; font-size: .68rem; line-height: 1.45; margin: 5px 0 0; }
+.bingo-favors { padding: 12px; border: 1px solid #8abdb6; border-radius: 10px; margin: 12px 0; }
+.bingo-favors p { color: #fff; font-size: .7rem; line-height: 1.4; margin: 8px 0; }
+.bingo-favors small { font-size: .6rem; color: #bad3d5; }
+.bingo-shop-checklist { display: grid; gap: 7px; margin: 10px 0; }
+.bingo-shop-checklist label { background: #2a4850; border-radius: 8px; padding: 11px 12px; display: flex; align-items: center; gap: 11px; }
+.bingo-shop-checklist input { width: 20px; height: 20px; accent-color: #4cb2a6; flex: 0 0 auto; }
+.bingo-shop-checklist label span { display: flex; flex-direction: column; gap: 4px; }
+.bingo-shop-checklist strong { color: #fff; font: 800 .73rem var(--font-head); }
+.bingo-shop-checklist small { color: #adc9cb; font-size: .53rem; }
+.bingo-small { font-size: .62rem !important; color: #d2e6e5 !important; }
+.bingo-complete { background: #286f62; padding: 14px; color: white; font: 800 .75rem var(--font-head); border-radius: 9px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bingo-complete button { color: white; background: transparent; padding: 7px; border: 1px solid #a1d7c9; border-radius: 7px; font: inherit; }
+@media (min-width: 520px) {
+  .bingo-grid { gap: 8px; }
+  .bingo-tile-title { font-size: 12px; }
+  .bingo-tile-icon { font-size: 25px; }
+}
+@media (max-width: 340px) {
+  .bingo-preview { padding-left: 8px; padding-right: 8px; }
+  .bingo-grid { gap: 3px; }
+  .bingo-tile { padding: 2px; }
+  .bingo-tile-title { font-size: 8px; }
+}
