@@ -1,5 +1,4 @@
 import { useAppState } from '../../state/AppState.jsx';
-import BackHeader from './BackHeader.jsx';
 
 export default function Announcements() {
   const { content } = useAppState();
@@ -7,7 +6,10 @@ export default function Announcements() {
 
   return (
     <div className="screen">
-      <BackHeader eyebrow="Announcements" title="Live updates" />
+      <div>
+        <span className="eyebrow">Announcements</span>
+        <h1>Live updates</h1>
+      </div>
       {items.length === 0 ? (
         <div className="empty-state">Nothing posted yet.</div>
       ) : (

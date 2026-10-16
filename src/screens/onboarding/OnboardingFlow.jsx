@@ -156,14 +156,10 @@ export default function OnboardingFlow() {
           <span className="eyebrow">Step 2 of 4</span>
           <h1 className="onboarding-hero-title">How to Play</h1>
           <p>
-            You just scored <strong>{pointsTotal} points</strong> for showing up — and that's just the start. All
-            night long, easy little moves stack up points and unlock surprises.
+            You just scored <strong>{pointsTotal} points</strong> for showing up — and that's just the start. Bingo,
+            vendors, and the room are how you move through the night.
           </p>
-          <p>
-            Your scavenger hunt is your map through the Loc Party: vendors to visit, challenges to complete, hidden
-            moments to catch. Points build your status on the leaderboard. Raffle entries build your shot at real
-            prizes. Go chase both.
-          </p>
+          <p>Points land on the leaderboard. The schedule updates here as soon as the times are set.</p>
           <p>Next: drop a photo and your relationship status for even more points.</p>
           <button className="btn btn-primary btn-block" onClick={next}>
             Let's do this!

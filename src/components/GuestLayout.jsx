@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
 import TopBar from './TopBar.jsx';
+import AnnouncementBanner from './AnnouncementBanner.jsx';
 import BottomNav from './BottomNav.jsx';
 import Celebration from './Celebration.jsx';
 import Takeover from './Takeover.jsx';
@@ -11,8 +12,11 @@ export default function GuestLayout() {
   if (!guest) return <Navigate to="/" replace />;
 
   return (
-    <div data-theme={guest.relationshipTheme || undefined} style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
-      <TopBar />
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+      <div className="app-chrome">
+        <TopBar />
+        <AnnouncementBanner />
+      </div>
       <Outlet />
       <BottomNav />
       <Celebration />

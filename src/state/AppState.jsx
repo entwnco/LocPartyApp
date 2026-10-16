@@ -11,6 +11,7 @@ const EMPTY_CONTENT = {
   challenges: [],
   vendors: [],
   scheduleItems: [],
+  venueAreas: [],
   announcements: [],
   prizes: [],
   raffleConfig: {
@@ -30,7 +31,8 @@ const EMPTY_CONTENT = {
   raffleEntrySources: {},
   themeColors: {},
   huntTitle: 'Your map through the Loc Party',
-  huntBody: 'Complete challenges, visit vendors, and catch hidden moments to earn points and raffle entries. Tap any card below to jump in — new ones unlock as the night goes on.',
+  huntBody: 'Complete challenges, visit vendors, and catch hidden moments to earn points. Tap any card below to jump in — new ones unlock as the night goes on.',
+  raffleEnabled: false,
 };
 
 export function AppStateProvider({ children }) {
@@ -45,11 +47,14 @@ export function AppStateProvider({ children }) {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState(null);
   const [takeover, setTakeover] = useState(null);
+  const [bingoBoard, setBingoBoard] = useState([]);
 
   const guestRef = useRef(null);
+  const raffleEnabledRef = useRef(false);
   useEffect(() => {
     guestRef.current = guest;
-  }, [guest]);
+    raffleEnabledRef.current = !!content.raffleEnabled;
+  }, [guest, content.raffleEnabled]);
 
   const pushCelebration = useCallback((message, kind = 'points') => {
     const id = `cel_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -64,6 +69,17 @@ export function AppStateProvider({ children }) {
   const loadContent = useCallback(async () => {
     const c = await api.fetchAllContent();
     setContent(c);
+  }, []);
+
+  const loadBingo = useCallback(async () => {
+    const board = await api.fetchBingoBoard();
+    const free = board.find((square) => square.id === 'free');
+    if (free && !free.completed) {
+      await api.completeBingoSquare('free');
+      setBingoBoard(await api.fetchBingoBoard());
+      return;
+    }
+    setBingoBoard(board);
   }, []);
 
   const loadGuestActivity = useCallback(async (guestId) => {
@@ -97,12 +113,15 @@ export function AppStateProvider({ children }) {
         if (cancelled) return;
 
         unsubscribe = api.subscribeToLiveChanges((table, payload) => {
-          if (['challenges', 'vendors', 'schedule_items', 'announcements', 'prizes', 'raffle_config', 'app_config'].includes(table)) {
+          if (['challenges', 'vendors', 'schedule_items', 'venue_areas', 'announcements', 'prizes', 'raffle_config', 'app_config'].includes(table)) {
             loadContent();
           }
           const currentGuest = guestRef.current;
           if (currentGuest && ['points_ledger', 'raffle_ledger', 'completions', 'triggered_hidden'].includes(table)) {
             loadGuestActivity(currentGuest.id);
+          }
+          if (currentGuest && ['bingo_rotation', 'bingo_completions'].includes(table)) {
+            loadBingo().catch((err) => console.error('Bingo board failed to refresh:', err));
           }
 
           // Full-screen takeover: only fires on the live transition (not on
@@ -118,7 +137,7 @@ export function AppStateProvider({ children }) {
             }
           }
 
-          if (table === 'raffle_config' && payload?.new) {
+          if (raffleEnabledRef.current && table === 'raffle_config' && payload?.new) {
             const row = payload.new;
             const prev = payload.old;
             const justAnnounced = row.announced && !(prev && prev.announced);
@@ -153,19 +172,26 @@ export function AppStateProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!guest?.id) {
+      setBingoBoard([]);
+      return;
+    }
+    loadBingo().catch((err) => console.error('Bingo board failed to load:', err));
+  }, [guest?.id, loadBingo]);
+
   const refreshContent = useCallback(() => loadContent(), [loadContent]);
 
   const finishNewGuest = useCallback(
     async (authUserId, displayName) => {
       const g = await api.createGuestRow(authUserId, displayName);
       setGuest(g);
-      const r = await api.awardPoints(g.id, 'createProfile', content.pointValues.createProfile, 'Created your party profile');
-      await api.awardEntries(g.id, 'registration', content.raffleEntrySources.registration.entries, content.raffleEntrySources.registration.label);
-      if (r.awarded) pushCelebration(`+${content.pointValues.createProfile} points — welcome in!`);
+      const r = await api.grantMyReward('createProfile');
+      if (r?.points) pushCelebration(`+${r.points} points — welcome in!`);
       await loadGuestActivity(g.id);
       return g;
     },
-    [content, pushCelebration, loadGuestActivity]
+    [pushCelebration, loadGuestActivity]
   );
 
   // Brand-new guest: create their real account, then their profile row.
@@ -221,13 +247,12 @@ export function AppStateProvider({ children }) {
     async (statusId) => {
       const status = RELATIONSHIP_STATUSES.find((s) => s.id === statusId);
       const next = await updateGuest({ relationshipStatusId: statusId, relationshipTheme: status ? status.theme : null });
-      const pv = content.pointValues.selectRelationshipStatus;
-      const r = await api.awardPoints(next.id, 'selectRelationshipStatus', pv, 'Shared relationship status');
-      if (r.awarded) pushCelebration(`+${pv} points!`);
+      const r = await api.grantMyReward('selectRelationshipStatus');
+      if (r?.points) pushCelebration(`+${r.points} points!`);
       await loadGuestActivity(next.id);
       return next;
     },
-    [updateGuest, content, pushCelebration, loadGuestActivity]
+    [updateGuest, pushCelebration, loadGuestActivity]
   );
 
   const addProfilePhoto = useCallback(
@@ -236,13 +261,12 @@ export function AppStateProvider({ children }) {
       const blob = await fileToResizedBlob(file);
       const url = await api.uploadGuestPhoto(blob, 'profile.jpg');
       const next = await updateGuest({ photoDataUrl: url });
-      const pv = content.pointValues.profilePhoto;
-      const r = await api.awardPoints(next.id, 'profilePhoto', pv, 'Added a profile photo');
-      if (r.awarded) pushCelebration(`+${pv} points!`);
+      const r = await api.grantMyReward('profilePhoto');
+      if (r?.points) pushCelebration(`+${r.points} points!`);
       await loadGuestActivity(next.id);
       return next;
     },
-    [guest, updateGuest, content, pushCelebration, loadGuestActivity]
+    [guest, updateGuest, pushCelebration, loadGuestActivity]
   );
 
   const uploadLook = useCallback(
@@ -251,30 +275,55 @@ export function AppStateProvider({ children }) {
       const blob = await fileToResizedBlob(file);
       const url = await api.uploadGuestPhoto(blob, 'look.jpg');
       const next = await updateGuest({ lookPhotoDataUrl: url });
-      const pv = content.pointValues.uploadLook;
-      const sources = content.raffleEntrySources.uploadLook;
-      const r = await api.awardPoints(next.id, 'uploadLook', pv, 'Uploaded Loc Party look');
-      await api.awardEntries(next.id, 'uploadLook', sources.entries, sources.label);
-      if (r.awarded) pushCelebration(`+${pv} points + a raffle entry!`, 'entry');
+      const r = await api.grantMyReward('uploadLook');
+      if (r?.points) {
+        pushCelebration(r.entries ? `+${r.points} points + a raffle entry!` : `+${r.points} points!`, r.entries ? 'entry' : undefined);
+      }
       await loadGuestActivity(next.id);
       return next;
     },
-    [guest, updateGuest, content, pushCelebration, loadGuestActivity]
+    [guest, updateGuest, pushCelebration, loadGuestActivity]
+  );
+
+  const redeemBingoCode = useCallback(
+    async (squareId, code) => {
+      if (!guest) throw new Error('No guest profile.');
+      const result = await api.redeemBingoCode(squareId, code);
+      if (result?.points) pushCelebration(`+${result.points} points — ${result.title}`);
+      await Promise.all([loadGuestActivity(guest.id), loadBingo()]);
+      return result;
+    },
+    [guest, pushCelebration, loadGuestActivity, loadBingo]
+  );
+
+  const completeBingoSquare = useCallback(
+    async (squareId, photo = null) => {
+      if (!guest) throw new Error('No guest profile.');
+      const result = await api.completeBingoSquare(squareId, photo);
+      if (result?.points) pushCelebration(`+${result.points} points — ${result.title}`);
+      await Promise.all([loadGuestActivity(guest.id), loadBingo()]);
+      return result;
+    },
+    [guest, pushCelebration, loadGuestActivity, loadBingo]
   );
 
   const completeChallenge = useCallback(
     async (challenge, proofPayload) => {
       if (!guest) return { status: 'error' };
+      if (['secret_code', 'qr_scan', 'multiple_choice'].includes(challenge.proofType)) {
+        await api.submitCheckedProof(challenge.id, proofPayload?.value ?? '');
+        const r = await api.grantMyReward(`challenge:${challenge.id}`);
+        pushCelebration(challenge.completionMessage || (r?.points ? `+${r.points} points!` : 'Done!'));
+        await loadGuestActivity(guest.id);
+        return { status: 'approved' };
+      }
       const needsApproval = ['photo_upload', 'video_upload', 'short_answer', 'admin_approval'].includes(challenge.proofType);
       const status = needsApproval ? 'pending' : 'approved';
       const record = await api.submitCompletion(guest.id, challenge.id, challenge.proofType, proofPayload, status);
 
       if (!needsApproval) {
-        const r = await api.awardPoints(guest.id, `challenge:${challenge.id}`, challenge.pointValue, challenge.title);
-        if (challenge.entryValue > 0) {
-          await api.awardEntries(guest.id, `challenge:${challenge.id}`, challenge.entryValue, challenge.title);
-        }
-        if (r.awarded) pushCelebration(challenge.completionMessage || `+${challenge.pointValue} points!`);
+        const r = await api.grantMyReward(`challenge:${challenge.id}`);
+        pushCelebration(challenge.completionMessage || (r?.points ? `+${r.points} points!` : 'Done!'));
       } else {
         pushCelebration('Submitted! Waiting on a quick review.', 'pending');
       }
@@ -290,17 +339,13 @@ export function AppStateProvider({ children }) {
   const buyRaffleEntry = useCallback(
     async (quantity = 1) => {
       if (!guest || quantity < 1) return { ok: false };
-      const cost = content.pointValues.buyEntryCost ?? 50;
-      const totalCost = cost * quantity;
-      if (pointsTotal < totalCost) return { ok: false, reason: 'insufficient' };
-      const key = `buyEntry:${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      await api.awardPoints(guest.id, key, -totalCost, `Bought ${quantity} raffle ${quantity === 1 ? 'entry' : 'entries'}`);
-      await api.awardEntries(guest.id, key, quantity, 'Bought with points');
+      const result = await api.buyRaffleEntries(quantity);
+      if (!result?.ok) return { ok: false, reason: result?.reason || 'failed' };
       await loadGuestActivity(guest.id);
       pushCelebration(`+${quantity} raffle ${quantity === 1 ? 'entry' : 'entries'}!`, 'entry');
       return { ok: true };
     },
-    [guest, content, pointsTotal, pushCelebration, loadGuestActivity]
+    [guest, pushCelebration, loadGuestActivity]
   );
 
   const completedChallengeIds = useMemo(
@@ -338,6 +383,9 @@ export function AppStateProvider({ children }) {
     uploadLook,
     addProfilePhoto,
     completeChallenge,
+    bingoBoard,
+    redeemBingoCode,
+    completeBingoSquare,
     buyRaffleEntry,
     pushCelebration,
     pointsTotal,

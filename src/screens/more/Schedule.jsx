@@ -1,12 +1,14 @@
 import { useAppState } from '../../state/AppState.jsx';
-import BackHeader from './BackHeader.jsx';
 
 export default function Schedule() {
   const { content } = useAppState();
   const items = content.scheduleItems.filter((s) => s.active);
   return (
     <div className="screen">
-      <BackHeader eyebrow="Event schedule" title="Tonight" />
+      <div>
+        <span className="eyebrow">Event schedule</span>
+        <h1>Tonight</h1>
+      </div>
       {items.length === 0 ? (
         <div className="empty-state">Schedule is still being finalized — check back soon.</div>
       ) : (

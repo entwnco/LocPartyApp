@@ -73,11 +73,14 @@ function SubmissionPreview({ completion }) {
   if (proofType === 'photo_upload' && proofPayload?.data) {
     return <img src={proofPayload.data} alt="Submission" style={{ maxWidth: '100%', borderRadius: 8 }} />;
   }
-  if (proofType === 'video_upload') {
-    return <p className="field-hint">Video submitted (stored as a data URL on submission).</p>;
+  if (proofType === 'video_upload' && proofPayload?.data) {
+    return <video src={proofPayload.data} controls style={{ width: '100%', maxHeight: 280, borderRadius: 8 }} />;
   }
   if (proofType === 'short_answer') {
     return <p>"{proofPayload?.value}"</p>;
+  }
+  if (proofPayload?.matched) {
+    return <p className="field-hint">Matched the saved answer.</p>;
   }
   return <p className="field-hint">Proof type: {proofType}</p>;
 }

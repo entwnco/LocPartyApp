@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
+import BackHeader from './more/BackHeader.jsx';
 
 export default function RaffleEntries() {
   const { entryCount, entries, content, guest, pointsTotal, buyRaffleEntry } = useAppState();
@@ -7,6 +9,8 @@ export default function RaffleEntries() {
   const isWinner = raffleConfig.status === 'drawn' && raffleConfig.announced && raffleConfig.winnerGuestId === guest.id;
   const buyCost = content.pointValues.buyEntryCost ?? 50;
   const [busy, setBusy] = useState(false);
+
+  if (!content.raffleEnabled) return <Navigate to="/more" replace />;
 
   async function handleBuy() {
     setBusy(true);
@@ -20,8 +24,7 @@ export default function RaffleEntries() {
   return (
     <div className="screen">
       <div>
-        <span className="eyebrow">My raffle entries</span>
-        <h1>{entryCount} entries</h1>
+        <BackHeader eyebrow="My raffle entries" title={`${entryCount} entries`} />
         <p>{raffleConfig.eligibility}</p>
       </div>
 

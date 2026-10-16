@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAppState } from '../state/AppState.jsx';
 
 const PROOF_LABELS = {
   qr_scan: 'Scan a QR code',
@@ -12,6 +13,7 @@ const PROOF_LABELS = {
 };
 
 export default function ChallengeCard({ challenge, completionStatus }) {
+  const { content } = useAppState();
   const locked = !challenge.status?.unlocked;
   const body = (
     <div className={`card ${locked ? 'locked' : ''}`}>
@@ -29,7 +31,7 @@ export default function ChallengeCard({ challenge, completionStatus }) {
       <div className="row-between">
         <span className="field-hint">{PROOF_LABELS[challenge.proofType] || 'Complete to earn'}</span>
         <span className="field-hint">
-          +{challenge.pointValue} pts{challenge.entryValue ? ` · +${challenge.entryValue} entries` : ''}
+          +{challenge.pointValue} pts{content.raffleEnabled && challenge.entryValue ? ` · +${challenge.entryValue} entries` : ''}
         </span>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAdminState } from '../../state/AdminState.jsx';
 
-function blank() {
-  return { id: null, title: '', description: '', active: true, sortOrder: 0 };
+function blank(sortOrder) {
+  return { id: null, title: '', description: '', active: true, sortOrder };
 }
 
 export default function AdminPrizes() {
@@ -15,6 +15,22 @@ export default function AdminPrizes() {
     try {
       await savePrize(item);
       setEditing(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function move(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= content.prizes.length) return;
+    const next = [...content.prizes];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    setBusy(true);
+    try {
+      for (let i = 0; i < next.length; i += 1) {
+        if (next[i].sortOrder !== i) await savePrize({ ...next[i], sortOrder: i });
+      }
     } finally {
       setBusy(false);
     }
@@ -44,14 +60,16 @@ export default function AdminPrizes() {
     <div className="stack">
       <div className="row-between">
         <h2 style={{ margin: 0 }}>Prizes</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(blank())}>+ New prize</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setEditing(blank((content.prizes.at(-1)?.sortOrder ?? -1) + 1))}>+ New prize</button>
       </div>
-      {content.prizes.map((p) => (
+      {content.prizes.map((p, i) => (
         <div key={p.id} className="card flat">
           <span className="pill-status on">{p.active ? 'Active' : 'Off'}</span>
           <h3 style={{ margin: '8px 0 4px' }}>{p.title || '(untitled)'}</h3>
           <p className="field-hint">{p.description}</p>
           <div className="row" style={{ gap: 6 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => move(i, -1)} disabled={busy || i === 0}>↑</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => move(i, 1)} disabled={busy || i === content.prizes.length - 1}>↓</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setEditing(p)}>Edit</button>
             <button className="btn btn-danger btn-sm" onClick={() => remove(p.id)}>Delete</button>
           </div>

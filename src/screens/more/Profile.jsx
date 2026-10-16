@@ -30,6 +30,12 @@ export default function Profile() {
       <BackHeader eyebrow="My profile" title="Edit details" />
 
       <div className="field">
+        <label>Party group</label>
+        <p style={{ margin: 0 }}>Group {guest.groupNumber}</p>
+        <p className="field-hint">Assigned when you joined. It stays with you for the event.</p>
+      </div>
+
+      <div className="field">
         <label>Display name</label>
         <input
           type="text"

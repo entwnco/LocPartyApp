@@ -1,9 +1,12 @@
+import { Navigate } from 'react-router-dom';
 import { useAppState } from '../../state/AppState.jsx';
 import BackHeader from './BackHeader.jsx';
 
 export default function Prizes() {
   const { content } = useAppState();
   const prizes = content.prizes.filter((p) => p.active);
+
+  if (!content.raffleEnabled) return <Navigate to="/more" replace />;
 
   return (
     <div className="screen">

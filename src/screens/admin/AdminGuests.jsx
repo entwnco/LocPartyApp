@@ -16,7 +16,7 @@ function formatJoined(iso) {
 }
 
 export default function AdminGuests() {
-  const { guests, pointsLedger, raffleLedger } = useAdminState();
+  const { guests, pointsLedger, raffleLedger, content } = useAdminState();
   const [query, setQuery] = useState('');
 
   const totalsByGuest = useMemo(() => {
@@ -75,8 +75,11 @@ export default function AdminGuests() {
                 </div>
               </div>
               <div className="row" style={{ gap: 8, marginTop: 10 }}>
+                {g.groupNumber ? <span className="tag">Group {g.groupNumber}</span> : null}
                 <span className="tag">{totals.points} pts</span>
-                <span className="tag">{totals.entries} {totals.entries === 1 ? 'entry' : 'entries'}</span>
+                {content.raffleEnabled ? (
+                  <span className="tag">{totals.entries} {totals.entries === 1 ? 'entry' : 'entries'}</span>
+                ) : null}
               </div>
             </div>
           );

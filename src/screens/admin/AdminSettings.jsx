@@ -3,7 +3,7 @@ import { useAdminState } from '../../state/AdminState.jsx';
 import { RELATIONSHIP_STATUSES } from '../../data/config.js';
 
 export default function AdminSettings() {
-  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors, saveHuntCopy } = useAdminState();
+  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors, saveHuntCopy, saveRaffleEnabled } = useAdminState();
   const [pointValues, setPointValues] = useState(content.pointValues);
   const [themeColors, setThemeColors] = useState(content.themeColors);
   const [huntTitle, setHuntTitle] = useState(content.huntTitle);
@@ -44,6 +44,15 @@ export default function AdminSettings() {
     }
   }
 
+  async function handleToggleRaffle() {
+    setBusy(true);
+    try {
+      await saveRaffleEnabled(!content.raffleEnabled);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function exportData() {
     const data = { content, guests, pointsLedger, raffleLedger, completions, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -58,6 +67,14 @@ export default function AdminSettings() {
   return (
     <div className="stack">
       <h2>Settings</h2>
+
+      <h3>Raffle</h3>
+      <p className="field-hint">Off hides the raffle from guests and from the admin menu. Points stay as they are.</p>
+      <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleToggleRaffle}>
+        {content.raffleEnabled ? 'Raffle is visible' : 'Raffle is hidden'}
+      </button>
+
+      <hr className="divider" />
 
       <h3>Point values</h3>
       <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
@@ -122,7 +139,7 @@ export default function AdminSettings() {
         <button className="btn btn-secondary" onClick={exportData}>Export all data (JSON)</button>
       </div>
       <p className="field-hint">
-        A full snapshot of live content, guests, points, entries, and submissions — pulled straight from the database.
+        A full snapshot of live content, guests, points, and submissions — pulled straight from the database.
       </p>
     </div>
   );
