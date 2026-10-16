@@ -33,6 +33,7 @@ const EMPTY_CONTENT = {
   huntTitle: 'Your map through the Loc Party',
   huntBody: 'Complete challenges, visit vendors, and catch hidden moments to earn points. Tap any card below to jump in — new ones unlock as the night goes on.',
   raffleEnabled: false,
+  mapEnabled: false,
 };
 
 export function AppStateProvider({ children }) {
@@ -120,7 +121,7 @@ export function AppStateProvider({ children }) {
           if (currentGuest && ['points_ledger', 'raffle_ledger', 'completions', 'triggered_hidden'].includes(table)) {
             loadGuestActivity(currentGuest.id);
           }
-          if (currentGuest && ['bingo_rotation', 'bingo_completions'].includes(table)) {
+          if (currentGuest && ['bingo_rotation', 'bingo_completions', 'bingo_squares'].includes(table)) {
             loadBingo().catch((err) => console.error('Bingo board failed to refresh:', err));
           }
 
@@ -221,6 +222,58 @@ export function AppStateProvider({ children }) {
     },
     [loadGuestActivity]
   );
+
+  const signOutGuest = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setSession(null);
+    setGuest(null);
+    setPointsLedger([]);
+    setRaffleLedger([]);
+    setCompletions([]);
+    setTriggeredHiddenIds([]);
+    setBingoBoard([]);
+    setCelebrations([]);
+    setTakeover(null);
+  }, []);
+
+  const requestPasswordReset = useCallback(async (email) => {
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw error;
+  }, []);
+
+  // The recovery email lands on /reset-password with either a PKCE code or
+  // an implicit-flow hash. detectSessionInUrl is off so the two clients
+  // never steal a token from each other, so this picks it up on purpose.
+  const completePasswordRecovery = useCallback(async (tokens) => {
+    const code = tokens?.code || '';
+    const accessToken = tokens?.accessToken || '';
+    const refreshToken = tokens?.refreshToken || '';
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+    } else if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (error) throw error;
+    } else {
+      throw new Error('Open the reset link from your email on this phone.');
+    }
+    window.history.replaceState({}, '', '/reset-password');
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    setSession(data.session);
+    const g = data.session ? await api.fetchGuestByAuthId(data.session.user.id) : null;
+    setGuest(g);
+    if (g) await loadGuestActivity(g.id);
+    return g;
+  }, [loadGuestActivity]);
+
+  const updatePassword = useCallback(async (password) => {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    if (data.session) setSession(data.session);
+  }, []);
 
   // Edge case: a real account exists (they logged in) but never
   // finished creating their profile — just collect the name, no new
@@ -377,6 +430,10 @@ export function AppStateProvider({ children }) {
     refreshContent,
     createGuest,
     loginGuest,
+    signOutGuest,
+    requestPasswordReset,
+    completePasswordRecovery,
+    updatePassword,
     completeProfile,
     updateGuest,
     setRelationshipStatus,

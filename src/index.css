@@ -698,6 +698,22 @@ textarea {
   height: 20px;
 }
 
+.nav-icon {
+  position: relative;
+  display: flex;
+}
+
+.nav-dot {
+  position: absolute;
+  top: -1px;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg-elevated);
+}
+
 /* ---- more-menu grid (secondary sections live off the tab bar) ---- */
 .menu-grid {
   display: grid;
@@ -724,6 +740,10 @@ textarea {
 .menu-tile span {
   font-size: 0.78rem;
   color: var(--text-dim);
+}
+
+.menu-tile-unseen {
+  border-color: var(--accent);
 }
 
 /* ---- empty state ---- */
@@ -866,6 +886,21 @@ textarea {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .confetti-piece {
+    display: none;
+  }
+}
+
 /* ---- admin ---- */
 .admin-shell {
   max-width: 920px;
@@ -937,6 +972,12 @@ hr.divider {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
+}
+
+button.bingo-cell {
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
 }
 
 .bingo-cell {

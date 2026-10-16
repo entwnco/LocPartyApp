@@ -9,13 +9,20 @@ export default function RaffleEntries() {
   const isWinner = raffleConfig.status === 'drawn' && raffleConfig.announced && raffleConfig.winnerGuestId === guest.id;
   const buyCost = content.pointValues.buyEntryCost ?? 50;
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   if (!content.raffleEnabled) return <Navigate to="/more" replace />;
 
   async function handleBuy() {
     setBusy(true);
+    setError('');
     try {
-      await buyRaffleEntry(1);
+      const result = await buyRaffleEntry(1);
+      if (result && result.ok === false) {
+        setError(result.reason === 'insufficient' ? 'Not enough points for that entry.' : 'Could not buy that entry.');
+      }
+    } catch (err) {
+      setError(err?.message || 'Could not buy that entry.');
     } finally {
       setBusy(false);
     }
@@ -54,6 +61,7 @@ export default function RaffleEntries() {
           >
             {busy ? 'Buying…' : `Buy 1 entry — ${buyCost} pts`}
           </button>
+          {error && <p style={{ color: 'var(--danger, #e05353)' }}>{error}</p>}
           {pointsTotal < buyCost && <p className="field-hint">Not enough points yet.</p>}
         </div>
       )}

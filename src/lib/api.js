@@ -364,11 +364,32 @@ export async function fetchAnnouncements(client = supabase) {
 export async function upsertAnnouncement(a, client = supabase) {
   const row = announcementToRow(a);
   const isNew = !a.id || String(a.id).startsWith('ann_') || String(a.id).startsWith('ann-');
+  let previous = null;
+  if (!isNew) {
+    const { data: existing } = await client.from('announcements').select('title, body, active').eq('id', a.id).maybeSingle();
+    previous = existing;
+  }
   const { data, error } = isNew
     ? await client.from('announcements').insert(row).select().single()
     : await client.from('announcements').update(row).eq('id', a.id).select().single();
   if (error) throw error;
-  return rowToAnnouncement(data);
+
+  const shouldNotify = data.active && (
+    !previous
+    || !previous.active
+    || previous.title !== data.title
+    || previous.body !== data.body
+  );
+  let pushError = null;
+  let sent = 0;
+  if (shouldNotify) {
+    const { data: pushResult, error: pushFailure } = await client.functions.invoke('send-announcement', {
+      body: { announcementId: data.id },
+    });
+    if (pushFailure) pushError = 'Phone alerts did not go out.';
+    else sent = pushResult?.sent || 0;
+  }
+  return { ...rowToAnnouncement(data), notified: shouldNotify && !pushError, sent, pushError };
 }
 
 export async function deleteAnnouncement(id, client = supabase) {
@@ -524,6 +545,7 @@ export async function fetchAppConfig(client = supabase) {
     huntTitle: data.hunt_title,
     huntBody: data.hunt_body,
     raffleEnabled: !!data.raffle_enabled,
+    mapEnabled: !!data.map_enabled,
   };
 }
 
@@ -535,6 +557,7 @@ export async function updateAppConfig(patch, client = supabase) {
   if ('huntTitle' in patch) dbPatch.hunt_title = patch.huntTitle;
   if ('huntBody' in patch) dbPatch.hunt_body = patch.huntBody;
   if ('raffleEnabled' in patch) dbPatch.raffle_enabled = patch.raffleEnabled;
+  if ('mapEnabled' in patch) dbPatch.map_enabled = patch.mapEnabled;
   const { data, error } = await client.from('app_config').update(dbPatch).eq('id', 1).select().single();
   if (error) throw error;
   return {
@@ -544,6 +567,7 @@ export async function updateAppConfig(patch, client = supabase) {
     huntTitle: data.hunt_title,
     huntBody: data.hunt_body,
     raffleEnabled: !!data.raffle_enabled,
+    mapEnabled: !!data.map_enabled,
   };
 }
 
@@ -653,6 +677,7 @@ export async function fetchAllContent(client = supabase) {
     huntTitle: appConfig.huntTitle,
     huntBody: appConfig.huntBody,
     raffleEnabled: appConfig.raffleEnabled,
+    mapEnabled: appConfig.mapEnabled,
   };
 }
 
@@ -738,6 +763,29 @@ export async function advanceBingoPool(poolId, client = supabase) {
   return data;
 }
 
+export async function updateBingoSquare(square, client = supabase) {
+  const { error } = await client.rpc('update_bingo_square', {
+    p_id: square.id,
+    p_title: square.title,
+    p_prompt: square.prompt,
+    p_area: square.area,
+    p_points: square.points,
+    p_completion_mode: square.completionMode,
+    p_pool_id: square.poolId || null,
+    p_pool_offset: square.poolOffset ?? 0,
+  });
+  if (error) throw error;
+}
+
+export async function updateBingoVendorClue(vendorId, clue, codeWord, client = supabase) {
+  const { error } = await client.rpc('update_bingo_vendor_clue', {
+    p_vendor_id: vendorId,
+    p_clue: clue,
+    p_code_word: codeWord,
+  });
+  if (error) throw error;
+}
+
 // ---- realtime ---------------------------------------------------------------
 
 /**
@@ -764,6 +812,7 @@ export function subscribeToLiveChanges(onChange, client = supabase) {
     'guests',
     'bingo_rotation',
     'bingo_completions',
+    'bingo_squares',
   ];
   const channel = client.channel('loc-party-live');
   tables.forEach((table) => {

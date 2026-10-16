@@ -31,6 +31,7 @@ const EMPTY_CONTENT = {
   huntTitle: '',
   huntBody: '',
   raffleEnabled: false,
+  mapEnabled: false,
 };
 
 export function AdminStateProvider({ children }) {
@@ -73,6 +74,14 @@ export function AdminStateProvider({ children }) {
 
   const advanceBingoPool = useCallback(async (poolId) => {
     await api.advanceBingoPool(poolId, supabaseAdmin);
+    await loadBingoStaff();
+  }, [loadBingoStaff]);
+
+  const saveBingoSquare = useCallback(async (square, clues) => {
+    for (const clue of clues || []) {
+      await api.updateBingoVendorClue(clue.vendorId, clue.clue, clue.codeWord, supabaseAdmin);
+    }
+    await api.updateBingoSquare(square, supabaseAdmin);
     await loadBingoStaff();
   }, [loadBingoStaff]);
 
@@ -197,7 +206,11 @@ export function AdminStateProvider({ children }) {
   const deleteVenueArea = useCallback(async (id) => { await api.deleteVenueArea(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- announcements ----
-  const saveAnnouncement = useCallback(async (a) => { await api.upsertAnnouncement(a, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveAnnouncement = useCallback(async (a) => {
+    const saved = await api.upsertAnnouncement(a, supabaseAdmin);
+    await refreshContent();
+    return saved;
+  }, [refreshContent]);
   const deleteAnnouncementItem = useCallback(async (id) => { await api.deleteAnnouncement(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- prizes ----
@@ -231,6 +244,7 @@ export function AdminStateProvider({ children }) {
   const saveThemeColors = useCallback(async (themeColors) => { await api.updateAppConfig({ themeColors }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const saveHuntCopy = useCallback(async (huntTitle, huntBody) => { await api.updateAppConfig({ huntTitle, huntBody }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const saveRaffleEnabled = useCallback(async (raffleEnabled) => { await api.updateAppConfig({ raffleEnabled }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveMapEnabled = useCallback(async (mapEnabled) => { await api.updateAppConfig({ mapEnabled }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- submissions / completions ----
   const reviewCompletion = useCallback(
@@ -308,6 +322,7 @@ export function AdminStateProvider({ children }) {
     saveThemeColors,
     saveHuntCopy,
     saveRaffleEnabled,
+    saveMapEnabled,
 
     reviewCompletion,
     triggerHiddenChallenge,
@@ -315,6 +330,7 @@ export function AdminStateProvider({ children }) {
     bingoStaff,
     loadBingoStaff,
     advanceBingoPool,
+    saveBingoSquare,
   };
 
   return <AdminStateContext.Provider value={value}>{children}</AdminStateContext.Provider>;

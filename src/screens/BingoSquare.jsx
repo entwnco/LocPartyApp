@@ -83,6 +83,7 @@ export default function BingoSquare() {
         <div className="card flat">
           <span className="eyebrow">{isGame ? 'Game on duty' : 'Booth on duty'}</span>
           <h3 style={{ marginTop: 8 }}>{square.assignmentName}</h3>
+          {square.assignmentClue && <p>{square.assignmentClue}</p>}
           {square.assignmentDetail && <p className="field-hint" style={{ marginBottom: 0 }}>{square.assignmentDetail}</p>}
         </div>
       )}

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
+import AnnouncementAlerts from '../components/AnnouncementAlerts.jsx';
+import InstallPrompt from '../components/InstallPrompt.jsx';
 
 export default function Dashboard() {
   const { guest, pointsTotal, entryCount, bingoBoard, content } = useAppState();
@@ -13,6 +15,9 @@ export default function Dashboard() {
         <p>You're locked in and the party is LIVE! Here's where things stand.</p>
         {guest.groupNumber ? <p>You're in Group {guest.groupNumber}.</p> : null}
       </div>
+
+      <InstallPrompt />
+      <AnnouncementAlerts />
 
       <div className="row" style={{ gap: 10 }}>
         <div className="card flat" style={{ flex: 1, textAlign: 'center' }}>

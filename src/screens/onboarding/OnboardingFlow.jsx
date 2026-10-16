@@ -88,6 +88,11 @@ export default function OnboardingFlow() {
 
   return (
     <div className="screen" style={{ minHeight: '100svh' }}>
+      {step === 0 && (
+        <button className="btn btn-ghost" style={{ alignSelf: 'flex-start', paddingLeft: 0 }} onClick={() => navigate('/')}>
+          ← Back
+        </button>
+      )}
       <div className="step-dots" style={{ marginBottom: 6 }}>
         {Array.from({ length: STEP_COUNT }).map((_, i) => (
           <span key={i} className={i <= step ? 'active' : ''} />

@@ -6,6 +6,7 @@ import GuestLayout from './components/GuestLayout.jsx';
 
 import Entrance from './screens/Entrance.jsx';
 import Login from './screens/Login.jsx';
+import ResetPassword from './screens/ResetPassword.jsx';
 import OnboardingFlow from './screens/onboarding/OnboardingFlow.jsx';
 import Dashboard from './screens/Dashboard.jsx';
 import BingoBoard from './screens/BingoBoard.jsx';
@@ -20,7 +21,7 @@ import EventMap from './screens/more/EventMap.jsx';
 import Vendors from './screens/more/Vendors.jsx';
 import Announcements from './screens/more/Announcements.jsx';
 import Leaderboard from './screens/more/Leaderboard.jsx';
-import Prizes from './screens/more/Prizes.jsx';
+import NotFound from './screens/NotFound.jsx';
 
 import AdminLogin from './screens/admin/AdminLogin.jsx';
 import AdminLayout from './screens/admin/AdminLayout.jsx';
@@ -44,6 +45,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Entrance />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/onboarding" element={<OnboardingFlow />} />
 
         <Route element={<GuestLayout />}>
@@ -68,7 +70,7 @@ export default function App() {
           <Route path="/more/announcements" element={<Navigate to="/announcements" replace />} />
           <Route path="/more/surprises" element={<Navigate to="/more" replace />} />
           <Route path="/more/leaderboard" element={<Leaderboard />} />
-          <Route path="/more/prizes" element={<Prizes />} />
+          <Route path="/more/prizes" element={<Navigate to="/more" replace />} />
         </Route>
 
         <Route
@@ -93,8 +95,10 @@ export default function App() {
             <Route path="raffle" element={<AdminRaffle />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AppStateProvider>
   );

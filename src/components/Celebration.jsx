@@ -28,13 +28,17 @@ function ConfettiBurst() {
   );
 }
 
+function reducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function Celebration() {
   const { celebrations } = useAppState();
   if (celebrations.length === 0) return null;
   const current = celebrations[celebrations.length - 1];
   return (
     <div className="celebration-layer" aria-live="polite">
-      {current.kind !== 'pending' && <ConfettiBurst />}
+      {current.kind !== 'pending' && !reducedMotion() && <ConfettiBurst />}
       <div className="celebration-toast">{current.message}</div>
     </div>
   );

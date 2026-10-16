@@ -3,7 +3,7 @@ import { useAdminState } from '../../state/AdminState.jsx';
 import { RELATIONSHIP_STATUSES } from '../../data/config.js';
 
 export default function AdminSettings() {
-  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors, saveHuntCopy, saveRaffleEnabled } = useAdminState();
+  const { session, content, guests, pointsLedger, raffleLedger, completions, savePointValues, saveThemeColors, saveHuntCopy, saveRaffleEnabled, saveMapEnabled } = useAdminState();
   const [pointValues, setPointValues] = useState(content.pointValues);
   const [themeColors, setThemeColors] = useState(content.themeColors);
   const [huntTitle, setHuntTitle] = useState(content.huntTitle);
@@ -44,6 +44,15 @@ export default function AdminSettings() {
     }
   }
 
+  async function handleToggleMap() {
+    setBusy(true);
+    try {
+      await saveMapEnabled(!content.mapEnabled);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleToggleRaffle() {
     setBusy(true);
     try {
@@ -72,6 +81,12 @@ export default function AdminSettings() {
       <p className="field-hint">Off hides the raffle from guests and from the admin menu. Points stay as they are.</p>
       <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleToggleRaffle}>
         {content.raffleEnabled ? 'Raffle is visible' : 'Raffle is hidden'}
+      </button>
+
+      <h3>Event map</h3>
+      <p className="field-hint">Off hides the floor plan. Guests use Venue instead.</p>
+      <button className="btn btn-secondary btn-sm" disabled={busy} onClick={handleToggleMap}>
+        {content.mapEnabled ? 'Map is visible' : 'Map is hidden'}
       </button>
 
       <hr className="divider" />

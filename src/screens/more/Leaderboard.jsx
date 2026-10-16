@@ -69,8 +69,6 @@ export default function Leaderboard() {
           })}
         </div>
       )}
-
-      <p className="field-hint">Admins can hide the leaderboard entirely from Settings if it's not wanted for this event.</p>
     </div>
   );
 }

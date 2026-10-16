@@ -11,7 +11,7 @@ export default function BingoBoard() {
         <span className="eyebrow">Bingo</span>
         <h1>Your card</h1>
         <p>
-          {done} of {bingoBoard.length || 25} squares. Loc-shop booths ask for a code word. Games rotate, and you mark those yourself.
+          {done} of {bingoBoard.length || 25} squares. Booth squares ask for a code word. Games rotate, and you mark those yourself.
         </p>
       </div>
 

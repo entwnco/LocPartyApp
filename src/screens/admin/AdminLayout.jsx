@@ -10,6 +10,7 @@ const TABS = [
   { to: '/admin/schedule', label: 'Schedule' },
   { to: '/admin/venue', label: 'Venue' },
   { to: '/admin/announcements', label: 'Announcements' },
+  { to: '/admin/prizes', label: 'Prizes' },
   { to: '/admin/raffle', label: 'Draw' },
   { to: '/admin/submissions', label: 'Submissions' },
   { to: '/admin/settings', label: 'Settings' },
