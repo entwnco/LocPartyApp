@@ -1,6 +1,31 @@
+import { useLayoutEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
 import BingoSquare from './BingoSquare.jsx';
+
+function SquareTitle({ children }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const cell = el?.parentElement;
+    if (!el || !cell) return;
+    let size = 13;
+    const fits = () => {
+      const box = cell.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return [...range.getClientRects()].every(
+        (rect) => rect.left >= box.left + 1 && rect.right <= box.right - 1 && rect.bottom <= box.bottom - 1
+      );
+    };
+    el.style.fontSize = `${size}px`;
+    while (size > 9 && !fits()) {
+      size -= 0.5;
+      el.style.fontSize = `${size}px`;
+    }
+  }, [children]);
+  return <strong ref={ref}>{children}</strong>;
+}
 
 function squareLabel(square) {
   if (square.completionMode === 'vendor_code') return 'Vendor Clue';
@@ -40,8 +65,7 @@ export default function BingoBoard() {
               className={`bingo-cell${square.completed ? ' done' : ''}${square.id === 'free' ? ' free' : ''}`}
               onClick={() => navigate(`/bingo/${square.id}`)}
             >
-              <strong>{squareLabel(square)}</strong>
-              <span>{square.completed ? 'Done' : `+${square.points}`}</span>
+              <SquareTitle>{squareLabel(square)}</SquareTitle>
             </button>
           ))}
         </div>

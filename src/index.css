@@ -970,7 +970,7 @@ button.bingo-cell {
   justify-content: center;
   align-items: center;
   gap: 4px;
-  padding: 6px;
+  padding: 4px;
   border: 2px solid var(--accent);
   border-radius: var(--radius-sm);
   background: #fff;
@@ -982,10 +982,12 @@ button.bingo-cell {
 
 .bingo-cell strong {
   font-family: var(--font-head);
-  font-size: 0.68rem;
-  line-height: 1.15;
+  font-size: 0.5rem;
+  line-height: 1.08;
   font-weight: 700;
   color: #111;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .bingo-cell span {
