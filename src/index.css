@@ -997,8 +997,13 @@ button.bingo-cell {
 
 .bingo-cell.done {
   border-color: var(--accent);
-  background: #fff;
-  color: #111;
+  background: var(--accent);
+  color: #fff;
+}
+
+.bingo-cell.done strong,
+.bingo-cell.done span {
+  color: #fff;
 }
 
 .bingo-modal-overlay {
