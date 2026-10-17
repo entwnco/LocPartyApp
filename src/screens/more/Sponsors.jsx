@@ -5,14 +5,18 @@ import { VendorCard } from './Vendors.jsx';
 const SPONSORS = [
   { name: 'Gifted Ones', match: /gifted ones/i },
   { name: 'Midway Specialty Care', match: /midway/i },
-  { name: 'Booksy', match: /booksy/i },
+  { name: 'Booksy', match: /booksy/i, logo: '/sponsors/booksy.webp' },
   { name: 'Urban Rastaman', match: /urban rasta/i },
 ];
 
 export default function Sponsors() {
   const { content } = useAppState();
   const vendors = content.vendors.filter((vendor) => vendor.active);
-  const sponsors = SPONSORS.map((sponsor) => vendors.find((vendor) => sponsor.match.test(vendor.name))).filter(Boolean);
+  const sponsors = SPONSORS.map((sponsor) => {
+    const vendor = vendors.find((item) => sponsor.match.test(item.name));
+    if (!vendor) return null;
+    return sponsor.logo ? { ...vendor, logoUrl: sponsor.logo } : vendor;
+  }).filter(Boolean);
 
   return (
     <div className="screen">
