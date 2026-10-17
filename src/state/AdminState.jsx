@@ -212,6 +212,10 @@ export function AdminStateProvider({ children }) {
 
   // ---- schedule ----
   const saveScheduleItem = useCallback(async (s) => { await api.upsertScheduleItem(s, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveScheduleOrder = useCallback(async (items) => {
+    for (const item of items) await api.upsertScheduleItem(item, supabaseAdmin);
+    await refreshContent();
+  }, [refreshContent]);
   const deleteScheduleItemRow = useCallback(async (id) => { await api.deleteScheduleItem(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   const saveVenueArea = useCallback(async (area) => { await api.upsertVenueArea(area, supabaseAdmin); await refreshContent(); }, [refreshContent]);
@@ -335,6 +339,7 @@ export function AdminStateProvider({ children }) {
     deleteVendorItem,
     uploadVendorLogo,
     saveScheduleItem,
+    saveScheduleOrder,
     deleteScheduleItemRow,
     saveVenueArea,
     deleteVenueArea,

@@ -1,8 +1,9 @@
 import { useAppState } from '../../state/AppState.jsx';
+import { sortScheduleItems } from '../../lib/scheduleOrder.js';
 
 export default function Schedule() {
   const { content } = useAppState();
-  const items = content.scheduleItems.filter((s) => s.active);
+  const items = sortScheduleItems(content.scheduleItems).filter((s) => s.active);
   return (
     <div className="screen">
       <div>

@@ -11,6 +11,7 @@
 // ============================================================
 
 import { supabase } from './supabaseClient.js';
+import { sortScheduleItems } from './scheduleOrder.js';
 
 const UNIQUE_VIOLATION = '23505';
 
@@ -334,7 +335,7 @@ function scheduleToRow(s) {
 export async function fetchSchedule(client = supabase) {
   const { data, error } = await client.from('schedule_items').select('*').order('sort_order');
   if (error) throw error;
-  return data.map(rowToSchedule);
+  return sortScheduleItems(data.map(rowToSchedule));
 }
 
 export async function upsertScheduleItem(s, client = supabase) {
