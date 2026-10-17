@@ -9,6 +9,7 @@ const EMPTY_CONTENT = {
   challenges: [],
   vendors: [],
   scheduleItems: [],
+  venueAreas: [],
   announcements: [],
   prizes: [],
   raffleConfig: {
@@ -27,16 +28,23 @@ const EMPTY_CONTENT = {
   pointValues: {},
   raffleEntrySources: {},
   themeColors: {},
+  huntTitle: '',
+  huntBody: '',
+  raffleEnabled: false,
+  mapEnabled: false,
 };
 
 export function AdminStateProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = not checked yet, null = signed out
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState('');
   const [content, setContent] = useState(EMPTY_CONTENT);
   const [guests, setGuests] = useState([]);
   const [pointsLedger, setPointsLedger] = useState([]);
   const [raffleLedger, setRaffleLedger] = useState([]);
   const [completions, setCompletions] = useState([]);
+  const [bingoStaff, setBingoStaff] = useState({ squares: [], pools: [] });
+  const [spins, setSpins] = useState([]);
 
   const loadContent = useCallback(async () => {
     const c = await api.fetchAllContent(supabaseAdmin);
@@ -55,6 +63,39 @@ export function AdminStateProvider({ children }) {
     setRaffleLedger(ent);
     setCompletions(comps);
   }, []);
+
+  const loadBingoStaff = useCallback(async () => {
+    const [board, answers] = await Promise.all([
+      api.fetchBingoStaffBoard(supabaseAdmin),
+      api.fetchBingoSquareAnswers(supabaseAdmin),
+    ]);
+    setBingoStaff({ ...board, answers: answers || {} });
+  }, []);
+
+  const loadSpins = useCallback(async () => {
+    setSpins(await api.fetchRaffleSpins(supabaseAdmin));
+  }, []);
+
+  const advanceBingoPool = useCallback(async (poolId) => {
+    await api.advanceBingoPool(poolId, supabaseAdmin);
+    await loadBingoStaff();
+  }, [loadBingoStaff]);
+
+  const saveBingoSquare = useCallback(async (square, clues) => {
+    for (const clue of clues || []) {
+      await api.updateBingoVendorClue(clue.vendorId, clue.clue, clue.codeWord, supabaseAdmin);
+    }
+    await api.updateBingoSquare(square, supabaseAdmin);
+    if (square.completionMode === 'answer' || square.completionMode === 'true_false') {
+      await api.setBingoSquareAnswer(square.id, square.secretAnswer || '', supabaseAdmin);
+    }
+    await loadBingoStaff();
+  }, [loadBingoStaff]);
+
+  const saveVendorCode = useCallback(async (vendorId, clue, codeWord) => {
+    await api.updateBingoVendorClue(vendorId, clue, codeWord, supabaseAdmin);
+    await loadBingoStaff();
+  }, [loadBingoStaff]);
 
   const refreshContent = useCallback(() => loadContent(), [loadContent]);
   const refreshAll = useCallback(() => Promise.all([loadContent(), loadAll()]), [loadContent, loadAll]);
@@ -78,24 +119,51 @@ export function AdminStateProvider({ children }) {
     };
   }, []);
 
-  // once signed in, load everything and subscribe to live changes
+  // A signed-in account only reaches the console when it is in public.admins.
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      if (session === null) setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabaseAdmin.rpc('is_admin');
+      if (cancelled) return;
+      if (error || data !== true) {
+        await supabaseAdmin.auth.signOut();
+        if (cancelled) return;
+        setIsAdmin(false);
+        setSession(null);
+        setAuthError('That account is not an admin.');
+        return;
+      }
+      setIsAdmin(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  // once signed in as an admin, load everything and subscribe to live changes
+  useEffect(() => {
+    if (!session || !isAdmin) return;
     let unsubscribe;
     let cancelled = false;
     (async () => {
-      await Promise.all([loadContent(), loadAll()]);
+      await Promise.all([loadContent(), loadAll(), loadBingoStaff(), loadSpins()]);
       if (cancelled) return;
       unsubscribe = api.subscribeToLiveChanges(() => {
         loadContent();
         loadAll();
+        loadBingoStaff();
+        loadSpins();
       }, supabaseAdmin);
     })();
     return () => {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [session, loadContent, loadAll]);
+  }, [session, isAdmin, loadContent, loadAll, loadBingoStaff, loadSpins]);
 
   const signIn = useCallback(async (email, password) => {
     setAuthError('');
@@ -104,22 +172,23 @@ export function AdminStateProvider({ children }) {
       setAuthError(error.message);
       throw error;
     }
+    const { data: admin, error: adminError } = await supabaseAdmin.rpc('is_admin');
+    if (adminError || admin !== true) {
+      await supabaseAdmin.auth.signOut();
+      const err = new Error('That account is not an admin.');
+      setAuthError(err.message);
+      setSession(null);
+      setIsAdmin(false);
+      throw err;
+    }
+    setIsAdmin(true);
     setSession(data.session);
     return data.session;
   }, []);
 
-  const signUp = useCallback(async (email, password) => {
-    setAuthError('');
-    const { data, error } = await supabaseAdmin.auth.signUp({ email, password });
-    if (error) {
-      setAuthError(error.message);
-      throw error;
-    }
-    if (data.session) setSession(data.session);
-    return data;
-  }, []);
-
   const signOut = useCallback(async () => {
+    setAuthError('');
+    setIsAdmin(false);
     await supabaseAdmin.auth.signOut();
     setSession(null);
   }, []);
@@ -145,8 +214,15 @@ export function AdminStateProvider({ children }) {
   const saveScheduleItem = useCallback(async (s) => { await api.upsertScheduleItem(s, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const deleteScheduleItemRow = useCallback(async (id) => { await api.deleteScheduleItem(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
+  const saveVenueArea = useCallback(async (area) => { await api.upsertVenueArea(area, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const deleteVenueArea = useCallback(async (id) => { await api.deleteVenueArea(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+
   // ---- announcements ----
-  const saveAnnouncement = useCallback(async (a) => { await api.upsertAnnouncement(a, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveAnnouncement = useCallback(async (a) => {
+    const saved = await api.upsertAnnouncement(a, supabaseAdmin);
+    await refreshContent();
+    return saved;
+  }, [refreshContent]);
   const deleteAnnouncementItem = useCallback(async (id) => { await api.deleteAnnouncement(id, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- prizes ----
@@ -158,11 +234,22 @@ export function AdminStateProvider({ children }) {
   const closeRaffle = useCallback(() => saveRaffleConfig({ status: 'closed' }), [saveRaffleConfig]);
   const reopenRaffle = useCallback(() => saveRaffleConfig({ status: 'open' }), [saveRaffleConfig]);
   const announceWinner = useCallback(() => saveRaffleConfig({ announced: true }), [saveRaffleConfig]);
-  const drawWinner = useCallback(async () => {
-    const result = await api.drawRaffleWinner(supabaseAdmin);
-    await refreshContent();
+  const spinRaffle = useCallback(async () => {
+    const result = await api.spinRaffle(supabaseAdmin);
+    await loadSpins();
     return result;
-  }, [refreshContent]);
+  }, [loadSpins]);
+
+  const undoLastSpin = useCallback(async () => {
+    const result = await api.undoRaffleSpin(supabaseAdmin);
+    await loadSpins();
+    return result;
+  }, [loadSpins]);
+
+  const markSpinGiven = useCallback(async (spinId) => {
+    await api.markRaffleSpinGiven(spinId, supabaseAdmin);
+    await loadSpins();
+  }, [loadSpins]);
   const resetRaffleAction = useCallback(async () => {
     await api.resetRaffle(supabaseAdmin);
     await refreshContent();
@@ -173,6 +260,8 @@ export function AdminStateProvider({ children }) {
   const savePointValues = useCallback(async (pointValues) => { await api.updateAppConfig({ pointValues }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const saveThemeColors = useCallback(async (themeColors) => { await api.updateAppConfig({ themeColors }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
   const saveHuntCopy = useCallback(async (huntTitle, huntBody) => { await api.updateAppConfig({ huntTitle, huntBody }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveRaffleEnabled = useCallback(async (raffleEnabled) => { await api.updateAppConfig({ raffleEnabled }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
+  const saveMapEnabled = useCallback(async (mapEnabled) => { await api.updateAppConfig({ mapEnabled }, supabaseAdmin); await refreshContent(); }, [refreshContent]);
 
   // ---- submissions / completions ----
   const reviewCompletion = useCallback(
@@ -182,7 +271,7 @@ export function AdminStateProvider({ children }) {
         const challenge = content.challenges.find((c) => c.id === record.challengeId);
         if (challenge) {
           await api.awardPoints(record.guestId, `challenge:${challenge.id}`, challenge.pointValue, challenge.title, supabaseAdmin);
-          if (challenge.entryValue > 0) {
+          if (content.raffleEnabled && challenge.entryValue > 0) {
             await api.awardEntries(record.guestId, `challenge:${challenge.id}`, challenge.entryValue, challenge.title, supabaseAdmin);
           }
         }
@@ -190,7 +279,7 @@ export function AdminStateProvider({ children }) {
       await loadAll();
       return record;
     },
-    [content.challenges, loadAll]
+    [content.challenges, content.raffleEnabled, loadAll]
   );
 
   const triggerHiddenChallenge = useCallback(
@@ -201,15 +290,31 @@ export function AdminStateProvider({ children }) {
     [loadAll]
   );
 
+  const previewRedemption = useCallback(
+    ({ guestId, email } = {}) => api.previewPointRedemption({ guestId, email }, supabaseAdmin),
+    []
+  );
+
+  const redeemGuestPoints = useCallback(
+    async (guestId, amount, note) => {
+      const result = await api.redeemGuestPoints(guestId, amount, note, supabaseAdmin);
+      await loadAll();
+      return result;
+    },
+    [loadAll]
+  );
+
+  const loadRedemptions = useCallback(() => api.fetchPointRedemptions(supabaseAdmin), []);
+
   const totalPoints = useMemo(() => pointsLedger.reduce((s, e) => s + e.amount, 0), [pointsLedger]);
   const totalEntries = useMemo(() => raffleLedger.reduce((s, e) => s + e.count, 0), [raffleLedger]);
 
   const value = {
     session,
+    isAdmin,
     authReady: session !== undefined,
     authError,
     signIn,
-    signUp,
     signOut,
 
     content,
@@ -217,6 +322,7 @@ export function AdminStateProvider({ children }) {
     pointsLedger,
     raffleLedger,
     completions,
+    spins,
     totalPoints,
     totalEntries,
 
@@ -230,6 +336,8 @@ export function AdminStateProvider({ children }) {
     uploadVendorLogo,
     saveScheduleItem,
     deleteScheduleItemRow,
+    saveVenueArea,
+    deleteVenueArea,
     saveAnnouncement,
     deleteAnnouncementItem,
     savePrize,
@@ -239,15 +347,28 @@ export function AdminStateProvider({ children }) {
     closeRaffle,
     reopenRaffle,
     announceWinner,
-    drawWinner,
+    spinRaffle,
+    undoLastSpin,
+    markSpinGiven,
     resetRaffleAction,
 
     savePointValues,
     saveThemeColors,
     saveHuntCopy,
+    saveRaffleEnabled,
+    saveMapEnabled,
 
     reviewCompletion,
     triggerHiddenChallenge,
+    previewRedemption,
+    redeemGuestPoints,
+    loadRedemptions,
+
+    bingoStaff,
+    loadBingoStaff,
+    advanceBingoPool,
+    saveBingoSquare,
+    saveVendorCode,
   };
 
   return <AdminStateContext.Provider value={value}>{children}</AdminStateContext.Provider>;

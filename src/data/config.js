@@ -233,11 +233,11 @@ export const RAFFLE_CONFIG = {
 // Admin → Settings; the app re-reads them on load.
 
 export const THEME_COLORS = {
-  single: { accent: '#ee3a2f', ink: '#ffffff' },
+  single: { accent: '#2f5fde', ink: '#ffffff' },
   dating: { accent: '#6a2c91', ink: '#ffffff' },
   partnered: { accent: '#3cb54a', ink: '#0f2b13' },
   married: { accent: '#ec1279', ink: '#ffffff' },
-  private: { accent: '#2f5fde', ink: '#ffffff' },
+  private: { accent: '#ee3a2f', ink: '#ffffff' },
 };
 
 // ---- admin (demo-only) --------------------------------------------

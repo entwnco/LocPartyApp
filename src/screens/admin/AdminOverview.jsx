@@ -16,8 +16,19 @@ export default function AdminOverview() {
       <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
         <StatCard label="Guests" value={guests.length} />
         <StatCard label="Total points awarded" value={totalPoints} />
-        <StatCard label="Total raffle entries" value={totalEntries} />
+        {content.raffleEnabled ? <StatCard label="Total raffle entries" value={totalEntries} /> : null}
         <StatCard label="Pending submissions" value={pendingCount} />
+      </div>
+
+      <h3>Party groups</h3>
+      <p className="field-hint">Guests are assigned to groups 1–5 in the order they join, then the rotation starts over.</p>
+      <div className="stack">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <div key={n} className="card flat row-between">
+            <span>Group {n}</span>
+            <strong>{guests.filter((g) => g.groupNumber === n).length}</strong>
+          </div>
+        ))}
       </div>
 
       <h3>Anonymous relationship-status totals</h3>

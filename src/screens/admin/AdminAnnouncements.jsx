@@ -9,11 +9,16 @@ export default function AdminAnnouncements() {
   const { content, saveAnnouncement, deleteAnnouncementItem } = useAdminState();
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
 
   async function save(item) {
     setBusy(true);
+    setNotice('');
     try {
-      await saveAnnouncement(item);
+      const saved = await saveAnnouncement(item);
+      if (saved?.pushError) setNotice('Posted. Phone alerts did not go out.');
+      else if (saved?.notified && saved.sent > 0) setNotice(`Posted. Alerts went to ${saved.sent} ${saved.sent === 1 ? 'phone' : 'phones'}.`);
+      else if (saved?.notified) setNotice('Posted. Alerts go out once a phone turns them on.');
       setEditing(null);
     } finally {
       setBusy(false);
@@ -40,6 +45,7 @@ export default function AdminAnnouncements() {
           />
           Priority — full-screen takeover on every guest's phone
         </label>
+        <p className="field-hint">An active announcement also alerts phones that turned on notifications.</p>
         <div className="row" style={{ gap: 10 }}>
           <button className="btn btn-secondary" onClick={() => setEditing(null)} disabled={busy}>Cancel</button>
           <button className="btn btn-primary" disabled={!editing.title.trim() || busy} onClick={() => save(editing)}>{busy ? 'Posting…' : 'Post'}</button>
@@ -54,6 +60,7 @@ export default function AdminAnnouncements() {
         <h2 style={{ margin: 0 }}>Announcements</h2>
         <button className="btn btn-primary btn-sm" onClick={() => setEditing(blank())}>+ New</button>
       </div>
+      {notice ? <p className="field-hint">{notice}</p> : null}
       {content.announcements.map((a) => (
         <div key={a.id} className="card flat">
           <div className="row" style={{ gap: 6 }}>

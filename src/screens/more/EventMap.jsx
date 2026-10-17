@@ -1,6 +1,11 @@
+import { Navigate } from 'react-router-dom';
+import { useAppState } from '../../state/AppState.jsx';
 import BackHeader from './BackHeader.jsx';
 
 export default function EventMap() {
+  const { content } = useAppState();
+  if (!content.mapEnabled) return <Navigate to="/venue" replace />;
+
   return (
     <div className="screen">
       <BackHeader eyebrow="Event map" title="Find your way" />

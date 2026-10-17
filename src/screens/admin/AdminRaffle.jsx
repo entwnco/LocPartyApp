@@ -1,127 +1,152 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAdminState } from '../../state/AdminState.jsx';
 
+function ticketsFor(points) {
+  return Math.max(0, Math.floor(points / 50));
+}
+
 export default function AdminRaffle() {
-  const { content, guests, totalEntries, saveRaffleConfig, closeRaffle, reopenRaffle, drawWinner, announceWinner, resetRaffleAction } = useAdminState();
-  const [form, setForm] = useState(content.raffleConfig);
+  const { content, guests, pointsLedger, spins, spinRaffle, undoLastSpin, markSpinGiven } = useAdminState();
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState('');
 
-  async function saveRules() {
-    setBusy(true);
-    try {
-      await saveRaffleConfig(form);
-    } finally {
-      setBusy(false);
-    }
+  const pointsByGuest = useMemo(() => {
+    const map = new Map();
+    for (const row of pointsLedger) map.set(row.guestId, (map.get(row.guestId) || 0) + row.amount);
+    return map;
+  }, [pointsLedger]);
+
+  const wonIds = useMemo(() => new Set(spins.map((spin) => spin.guestId)), [spins]);
+
+  const pool = useMemo(() => {
+    return guests
+      .map((guest) => {
+        const points = pointsByGuest.get(guest.id) || 0;
+        return { guest, points, tickets: ticketsFor(points) };
+      })
+      .filter((row) => row.tickets > 0 && !wonIds.has(row.guest.id))
+      .sort((a, b) => b.tickets - a.tickets || a.guest.displayName.localeCompare(b.guest.displayName));
+  }, [guests, pointsByGuest, wonIds]);
+
+  const totalTickets = pool.reduce((sum, row) => sum + row.tickets, 0);
+  const prizes = useMemo(
+    () => content.prizes.filter((prize) => prize.active).slice().sort((a, b) => a.sortOrder - b.sortOrder),
+    [content.prizes],
+  );
+  const lastSpinGiven = spins.length > 0 && !!spins[spins.length - 1].givenAt;
+
+  function prizeLabel(spinRow) {
+    if (spinRow.prizeTitle) return spinRow.prizeTitle;
+    return prizes[spinRow.spinNumber - 1]?.title || '';
   }
 
-  async function handleClose() {
-    setBusy(true);
-    try {
-      await closeRaffle();
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function handleReopen() {
-    setBusy(true);
-    try {
-      await reopenRaffle();
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function handleDraw() {
+  async function spin() {
     setError('');
-    setBusy(true);
+    setBusy('spin');
     try {
-      await drawWinner();
-    } catch (e) {
-      setError(e.message);
+      await spinRaffle();
+    } catch (err) {
+      setError(err?.message || 'The spin did not finish.');
     } finally {
-      setBusy(false);
-    }
-  }
-  async function handleAnnounce() {
-    setBusy(true);
-    try {
-      await announceWinner();
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function handleReset() {
-    if (!confirm('Reset the raffle? This clears all entries and any drawn winner.')) return;
-    setBusy(true);
-    try {
-      await resetRaffleAction();
-    } finally {
-      setBusy(false);
+      setBusy('');
     }
   }
 
-  const winner = guests.find((g) => g.id === content.raffleConfig.winnerGuestId);
-  const winnerName = winner ? winner.displayName : content.raffleConfig.winnerGuestId;
+  async function give(spinRow) {
+    const prize = prizeLabel(spinRow);
+    const name = guests.find((item) => item.id === spinRow.guestId)?.displayName || spinRow.guestName || 'this guest';
+    if (!confirm(`Mark ${prize || 'this prize'} given to ${name}?`)) return;
+    setError('');
+    setBusy('give');
+    try {
+      await markSpinGiven(spinRow.id);
+    } catch (err) {
+      setError(err?.message || 'Could not mark that prize given.');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function undo() {
+    if (!spins.length) return;
+    const last = spins[spins.length - 1];
+    if (!confirm(`Undo spin ${last.spinNumber}?`)) return;
+    setError('');
+    setBusy('undo');
+    try {
+      await undoLastSpin();
+    } catch (err) {
+      setError(err?.message || 'Could not undo that spin.');
+    } finally {
+      setBusy('');
+    }
+  }
 
   return (
     <div className="stack">
-      <h2>Raffle</h2>
+      <div>
+        <h2 style={{ marginBottom: 6 }}>Draw</h2>
+        <p className="field-hint">
+          Spins are the winner list, in order. Prize 1 goes to spin 1. Mark a spin given when the prize is in their hands. A guest’s tickets are their points divided by 50, rounded down. Nobody wins twice.
+        </p>
+      </div>
 
       <div className="row" style={{ gap: 10 }}>
         <div className="card flat" style={{ flex: 1, textAlign: 'center' }}>
-          <div className="eyebrow">Status</div>
-          <h3 style={{ marginTop: 8 }}>{content.raffleConfig.status}</h3>
+          <div className="eyebrow">In the pool</div>
+          <h3 style={{ marginTop: 8 }}>{pool.length}</h3>
         </div>
         <div className="card flat" style={{ flex: 1, textAlign: 'center' }}>
-          <div className="eyebrow">Total tickets</div>
-          <h3 style={{ marginTop: 8 }}>{totalEntries}</h3>
+          <div className="eyebrow">Tickets</div>
+          <h3 style={{ marginTop: 8 }}>{totalTickets}</h3>
         </div>
       </div>
 
-      {content.raffleConfig.status === 'drawn' && (
-        <div className="card">
-          <h3>Winning entry</h3>
-          <p>Guest: {winnerName || '(unknown)'}</p>
-          <div className="row" style={{ gap: 10 }}>
-            {!content.raffleConfig.announced && (
-              <button className="btn btn-primary btn-sm" onClick={handleAnnounce} disabled={busy}>Announce in-app</button>
-            )}
-            {content.raffleConfig.announced && <span className="tag">Announced</span>}
-          </div>
+      <div className="card">
+        <span className="eyebrow">Next spin</span>
+        <h3 style={{ marginTop: 8 }}>{spins.length + 1}</h3>
+        <div className="row" style={{ gap: 10 }}>
+          <button className="btn btn-primary" onClick={spin} disabled={!!busy}>
+            {busy === 'spin' ? 'Spinning…' : 'Spin'}
+          </button>
+          <button className="btn btn-secondary" onClick={undo} disabled={!!busy || spins.length === 0 || lastSpinGiven}>
+            Undo last spin
+          </button>
         </div>
-      )}
+      </div>
 
       {error && <p style={{ color: 'var(--danger)' }}>{error}</p>}
 
-      <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
-        {content.raffleConfig.status === 'open' && (
-          <button className="btn btn-secondary" onClick={handleClose} disabled={busy}>Close raffle</button>
-        )}
-        {content.raffleConfig.status === 'closed' && (
-          <>
-            <button className="btn btn-secondary" onClick={handleReopen} disabled={busy}>Reopen</button>
-            <button className="btn btn-primary" onClick={handleDraw} disabled={busy}>Draw winner</button>
-          </>
-        )}
-        <button className="btn btn-danger" onClick={handleReset} disabled={busy}>Reset raffle</button>
-      </div>
-
-      <hr className="divider" />
-      <h3>Raffle rules</h3>
-      <div className="field"><label>Rules</label><textarea rows={3} value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} /></div>
-      <div className="field"><label>Prize</label><input value={form.prize} onChange={(e) => setForm({ ...form, prize: e.target.value })} /></div>
-      <div className="row" style={{ gap: 10 }}>
-        <div className="field" style={{ flex: 1 }}><label>Deadline</label><input type="datetime-local" value={form.deadline || ''} onChange={(e) => setForm({ ...form, deadline: e.target.value })} /></div>
-        <div className="field" style={{ flex: 1 }}><label>Drawing time</label><input type="datetime-local" value={form.drawingTime || ''} onChange={(e) => setForm({ ...form, drawingTime: e.target.value })} /></div>
-      </div>
-      <div className="field"><label>Eligibility</label><input value={form.eligibility} onChange={(e) => setForm({ ...form, eligibility: e.target.value })} /></div>
-      <div className="field"><label>Contact method</label><input value={form.contactMethod} onChange={(e) => setForm({ ...form, contactMethod: e.target.value })} /></div>
-      <label className="row" style={{ gap: 8 }}>
-        <input type="checkbox" checked={form.mustBePresent} onChange={(e) => setForm({ ...form, mustBePresent: e.target.checked })} />
-        Winner must be present
-      </label>
-      <button className="btn btn-primary" onClick={saveRules} disabled={busy}>{busy ? 'Saving…' : 'Save rules'}</button>
+      <h3>Spins</h3>
+      {spins.length === 0 ? (
+        <p className="field-hint">No winners yet.</p>
+      ) : (
+        spins.map((spinRow) => {
+          const guest = guests.find((item) => item.id === spinRow.guestId);
+          const name = guest?.displayName || spinRow.guestName || 'Guest';
+          const prize = prizeLabel(spinRow);
+          return (
+            <div key={spinRow.id} className="card flat">
+              <div className="row-between">
+                <span className="eyebrow">Spin {spinRow.spinNumber}</span>
+                {spinRow.givenAt ? <span className="tag">Given</span> : null}
+              </div>
+              <h3 style={{ margin: '8px 0 4px' }}>{name}</h3>
+              <p style={{ margin: 0 }}>{prize || 'No prize lined up for this spin'}</p>
+              <p style={{ margin: '4px 0 0' }}>{spinRow.email || 'No email on the account'}</p>
+              <p className="field-hint" style={{ marginBottom: spinRow.givenAt ? 0 : 10 }}>
+                {guest?.groupNumber ? `Group ${guest.groupNumber} · ` : ''}
+                {spinRow.tickets} {spinRow.tickets === 1 ? 'ticket' : 'tickets'} from {spinRow.points} points
+              </p>
+              {!spinRow.givenAt && (
+                <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => give(spinRow)}>
+                  {busy === 'give' ? 'Saving…' : 'Mark given'}
+                </button>
+              )}
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }

@@ -1,14 +1,14 @@
 import { useAppState } from '../state/AppState.jsx';
+import BackHeader from './more/BackHeader.jsx';
 
 export default function PointsProgress() {
-  const { pointsTotal, pointsHistory, content } = useAppState();
+  const { pointsTotal, pointsHistory } = useAppState();
   const nextMilestone = [50, 100, 200, 400].find((m) => m > pointsTotal) || null;
 
   return (
     <div className="screen">
       <div>
-        <span className="eyebrow">Points & progress</span>
-        <h1>{pointsTotal} points</h1>
+        <BackHeader eyebrow="Points & progress" title={`${pointsTotal} points`} />
         {nextMilestone && (
           <>
             <p>{nextMilestone - pointsTotal} points to your next unlock milestone.</p>
@@ -27,17 +27,14 @@ export default function PointsProgress() {
           {pointsHistory.map((h) => (
             <div key={h.id} className="card flat row-between">
               <span>{h.label}</span>
-              <strong style={{ color: 'var(--accent)' }}>+{h.amount}</strong>
+              <strong style={{ color: h.amount < 0 ? 'var(--danger)' : 'var(--accent)' }}>
+                {h.amount > 0 ? `+${h.amount}` : h.amount}
+              </strong>
             </div>
           ))}
         </div>
       )}
 
-      {content.raffleConfig && (
-        <p className="field-hint">
-          Points and raffle entries are tracked separately — points unlock content, entries are your raffle odds.
-        </p>
-      )}
     </div>
   );
 }

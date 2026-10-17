@@ -4,21 +4,26 @@ import { useAdminState } from '../../state/AdminState.jsx';
 const TABS = [
   { to: '/admin/overview', label: 'Overview' },
   { to: '/admin/guests', label: 'Guests' },
+  { to: '/admin/redeem', label: 'Redeem' },
+  { to: '/admin/bingo', label: 'Bingo' },
+  { to: '/admin/codes', label: 'Codes' },
   { to: '/admin/challenges', label: 'Challenges' },
   { to: '/admin/vendors', label: 'Vendors' },
   { to: '/admin/schedule', label: 'Schedule' },
+  { to: '/admin/venue', label: 'Venue' },
   { to: '/admin/announcements', label: 'Announcements' },
   { to: '/admin/prizes', label: 'Prizes' },
-  { to: '/admin/raffle', label: 'Raffle' },
+  { to: '/admin/raffle', label: 'Draw' },
   { to: '/admin/submissions', label: 'Submissions' },
   { to: '/admin/settings', label: 'Settings' },
 ];
 
 export default function AdminLayout() {
-  const { session, authReady, signOut } = useAdminState();
+  const { session, isAdmin, authReady, signOut, content } = useAdminState();
+  const tabs = TABS.filter((tab) => !tab.raffle || content.raffleEnabled);
 
-  if (!authReady) return <div className="screen" style={{ minHeight: '100svh' }} />;
-  if (!session) return <Navigate to="/admin" replace />;
+  if (!authReady || (session && !isAdmin)) return <div className="screen" style={{ minHeight: '100svh' }} />;
+  if (!session || !isAdmin) return <Navigate to="/admin" replace />;
 
   return (
     <div style={{ minHeight: '100svh', background: 'var(--bg)' }}>
@@ -38,7 +43,7 @@ export default function AdminLayout() {
       </div>
       <div className="admin-shell" style={{ padding: '14px 16px 60px' }}>
         <div className="scroll-x row" style={{ gap: 8, marginBottom: 16, paddingBottom: 6 }}>
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <NavLink
               key={t.to}
               to={t.to}

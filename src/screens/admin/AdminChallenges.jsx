@@ -15,6 +15,8 @@ function blankChallenge() {
     pointValue: 10,
     entryValue: 0,
     proofType: 'check_in',
+    choices: [],
+    answer: '',
     unlock: { type: 'immediate' },
     completionMessage: '',
     active: true,
@@ -69,6 +71,7 @@ export default function AdminChallenges() {
         vendors={content.vendors}
         allChallenges={content.challenges}
         busy={busy}
+        raffleEnabled={content.raffleEnabled}
         onSave={save}
         onCancel={() => setEditing(null)}
       />
@@ -92,7 +95,13 @@ export default function AdminChallenges() {
             <span className="pill-status off">{c.unlock?.type}</span>
           </div>
           <h3 style={{ margin: '8px 0 4px' }}>{c.title || '(untitled)'}</h3>
-          <p className="field-hint">{c.category} · +{c.pointValue} pts · +{c.entryValue} entries · {c.proofType}</p>
+          <p className="field-hint">
+            {c.category} · +{c.pointValue} pts
+            {content.raffleEnabled ? ` · +${c.entryValue} entries` : ''} · {c.proofType}
+          </p>
+          {['secret_code', 'qr_scan', 'multiple_choice'].includes(c.proofType) && !String(c.answer || '').trim() && (
+            <p className="field-hint">No answer saved yet — guests cannot complete this.</p>
+          )}
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <button className="btn btn-secondary btn-sm" onClick={() => setEditing(c)}>Edit</button>
             <button className="btn btn-secondary btn-sm" onClick={() => duplicate(c)}>Duplicate</button>
@@ -107,11 +116,49 @@ export default function AdminChallenges() {
   );
 }
 
-function ChallengeForm({ challenge, vendors, allChallenges, busy, onSave, onCancel }) {
-  const [form, setForm] = useState(challenge);
+function proofProblem(form) {
+  if (form.proofType === 'secret_code' && !form.answer?.trim()) {
+    return 'Enter the secret code guests have to match.';
+  }
+  if (form.proofType === 'qr_scan' && !form.answer?.trim()) {
+    return 'Enter the text the QR code should contain.';
+  }
+  if (form.proofType === 'multiple_choice') {
+    const choices = (form.choices || []).map((choice) => choice.trim()).filter(Boolean);
+    if (choices.length < 2) return 'Add at least two choices.';
+    if (new Set(choices.map((choice) => choice.toLowerCase())).size !== choices.length) {
+      return 'Choices have to be different from each other.';
+    }
+    if (!choices.includes(form.answer?.trim())) return 'Mark the correct choice.';
+  }
+  return '';
+}
+
+function ChallengeForm({ challenge, vendors, allChallenges, busy, onSave, onCancel, raffleEnabled }) {
+  const [form, setForm] = useState({ choices: [], answer: '', ...challenge });
+  const [formError, setFormError] = useState('');
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const setUnlock = (patch) => setForm((f) => ({ ...f, unlock: { ...f.unlock, ...patch } }));
+
+  async function handleSave() {
+    const problem = proofProblem(form);
+    if (problem) {
+      setFormError(problem);
+      return;
+    }
+    const choices = (form.choices || []).map((choice) => choice.trim()).filter(Boolean);
+    setFormError('');
+    try {
+      await onSave({
+        ...form,
+        choices: form.proofType === 'multiple_choice' ? choices : [],
+        answer: ['secret_code', 'qr_scan', 'multiple_choice'].includes(form.proofType) ? form.answer.trim() : form.answer,
+      });
+    } catch (err) {
+      setFormError(err?.message || 'Could not save this challenge.');
+    }
+  }
 
   return (
     <div className="stack">
@@ -168,10 +215,12 @@ function ChallengeForm({ challenge, vendors, allChallenges, busy, onSave, onCanc
           <label>Point value</label>
           <input type="number" value={form.pointValue} onChange={(e) => set({ pointValue: Number(e.target.value) })} />
         </div>
-        <div className="field" style={{ flex: 1 }}>
-          <label>Raffle-entry value</label>
-          <input type="number" value={form.entryValue} onChange={(e) => set({ entryValue: Number(e.target.value) })} />
-        </div>
+        {raffleEnabled ? (
+          <div className="field" style={{ flex: 1 }}>
+            <label>Raffle-entry value</label>
+            <input type="number" value={form.entryValue} onChange={(e) => set({ entryValue: Number(e.target.value) })} />
+          </div>
+        ) : null}
       </div>
 
       <div className="field">
@@ -182,6 +231,72 @@ function ChallengeForm({ challenge, vendors, allChallenges, busy, onSave, onCanc
           ))}
         </select>
       </div>
+
+      {(form.proofType === 'secret_code' || form.proofType === 'qr_scan') && (
+        <div className="field">
+          <label>{form.proofType === 'qr_scan' ? 'QR code text' : 'Secret code'}</label>
+          <input
+            type="text"
+            autoComplete="off"
+            value={form.answer || ''}
+            onChange={(e) => set({ answer: e.target.value })}
+          />
+          <span className="field-hint">
+            {form.proofType === 'qr_scan'
+              ? 'Encode this text in the QR. Guests never see it here. Letters and numbers are what get checked.'
+              : 'Guests have to enter this. They never see it here. Letters and numbers are what get checked.'}
+          </span>
+        </div>
+      )}
+
+      {form.proofType === 'multiple_choice' && (
+        <div className="stack">
+          <span className="field-hint">Add the choices guests will see, and mark the correct one.</span>
+          {(form.choices || []).map((choice, index) => (
+            <div key={index} className="row" style={{ gap: 8, alignItems: 'center' }}>
+              <input
+                type="radio"
+                name="correct-choice"
+                aria-label="Correct choice"
+                checked={choice.trim() !== '' && form.answer === choice}
+                onChange={() => set({ answer: choice })}
+              />
+              <input
+                type="text"
+                value={choice}
+                aria-label={`Choice ${index + 1}`}
+                onChange={(e) => {
+                  const choices = [...(form.choices || [])];
+                  const previous = choices[index];
+                  choices[index] = e.target.value;
+                  set({
+                    choices,
+                    answer: form.answer === previous ? e.target.value : form.answer,
+                  });
+                }}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  const choices = (form.choices || []).filter((_, choiceIndex) => choiceIndex !== index);
+                  set({ choices, answer: form.answer === choice ? '' : form.answer });
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => set({ choices: [...(form.choices || []), ''] })}
+          >
+            Add choice
+          </button>
+        </div>
+      )}
 
       <div className="field">
         <label>Unlock rule</label>
@@ -261,9 +376,11 @@ function ChallengeForm({ challenge, vendors, allChallenges, busy, onSave, onCanc
         </label>
       </div>
 
+      {formError && <p style={{ color: 'var(--danger)' }}>{formError}</p>}
+
       <div className="row" style={{ gap: 10 }}>
         <button className="btn btn-secondary" onClick={onCancel} disabled={busy}>Cancel</button>
-        <button className="btn btn-primary" disabled={!form.title.trim() || busy} onClick={() => onSave(form)}>
+        <button className="btn btn-primary" disabled={!form.title.trim() || busy} onClick={handleSave}>
           {busy ? 'Saving…' : 'Save'}
         </button>
       </div>

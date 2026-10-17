@@ -1,17 +1,23 @@
 import { Link } from 'react-router-dom';
+import { useAppState } from '../state/AppState.jsx';
+import { useUnseenAnnouncement } from '../lib/seenAnnouncements.js';
 
 const ITEMS = [
   { to: '/more/profile', title: 'My Profile', desc: 'Edit your details' },
-  { to: '/more/schedule', title: 'Schedule', desc: "What's happening when" },
-  { to: '/more/map', title: 'Event Map', desc: 'Find your way around' },
+  { to: '/announcements', title: 'Announcements', desc: 'See updates again', announce: true },
   { to: '/more/vendors', title: 'Vendors', desc: 'Featured & all vendors' },
-  { to: '/more/announcements', title: 'Announcements', desc: 'Live updates' },
-  { to: '/more/surprises', title: 'Unlocked Surprises', desc: 'Revealed just for you' },
+  { to: '/more/sponsors', title: 'Sponsors', desc: 'Partners of Loc Party' },
+  { to: '/more/progress', title: 'Points', desc: 'Your score and history' },
+  { to: '/more/redeem', title: 'Redeem', desc: 'Show your code to a host' },
+  { to: '/more/raffle', title: 'Raffle', desc: 'Entries and the drawing', raffle: true },
+  { to: '/more/map', title: 'Event Map', desc: 'Find your way around', map: true },
   { to: '/more/leaderboard', title: 'Leaderboard', desc: 'See how you stack up' },
-  { to: '/more/prizes', title: 'Prizes', desc: 'What you could win' },
 ];
 
 export default function MoreMenu() {
+  const { content } = useAppState();
+  const unseen = useUnseenAnnouncement();
+  const items = ITEMS.filter((item) => (!item.raffle || content.raffleEnabled) && (!item.map || content.mapEnabled));
   return (
     <div className="screen">
       <div>
@@ -19,10 +25,10 @@ export default function MoreMenu() {
         <h1>Everything else</h1>
       </div>
       <div className="menu-grid">
-        {ITEMS.map((item) => (
-          <Link key={item.to} to={item.to} className="menu-tile">
+        {items.map((item) => (
+          <Link key={item.to} to={item.to} className={item.announce && unseen ? 'menu-tile menu-tile-unseen' : 'menu-tile'}>
             <strong>{item.title}</strong>
-            <span>{item.desc}</span>
+            <span>{item.announce && unseen ? 'New update' : item.desc}</span>
           </Link>
         ))}
       </div>

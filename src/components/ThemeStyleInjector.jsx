@@ -1,10 +1,23 @@
+import { useEffect } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 
 // Renders admin-edited accent colors as CSS variable overrides so
 // non-technical color changes (Admin → Settings) take effect instantly,
 // with no code edits or rebuild required.
+// The guest's relationship status sets the main accent on the document.
 export default function ThemeStyleInjector() {
-  const { content } = useAppState();
+  const { content, guest } = useAppState();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    delete root.dataset.group;
+    if (guest?.relationshipTheme) root.dataset.theme = guest.relationshipTheme;
+    else delete root.dataset.theme;
+    return () => {
+      delete root.dataset.theme;
+      delete root.dataset.group;
+    };
+  }, [guest?.relationshipTheme]);
   const css = Object.entries(content.themeColors || {})
     .map(
       ([theme, { accent, ink }]) => `[data-theme='${theme}'] { --accent: ${accent}; --accent-ink: ${ink}; }`

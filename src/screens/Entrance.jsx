@@ -28,6 +28,7 @@ export default function Entrance() {
           <span className="eyebrow">Welcome to</span>
           <h1 className="entrance-title">{EVENT_INFO.name}</h1>
           <p>{EVENT_INFO.tagline}</p>
+          <p className="entrance-presenter">Presented by the Entwined Collection</p>
         </div>
 
         <div className="entrance-cta">

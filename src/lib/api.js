@@ -27,6 +27,7 @@ function rowToGuest(row) {
     hereFor: row.here_for || '',
     relationshipStatusId: row.relationship_status_id,
     relationshipTheme: row.relationship_theme,
+    groupNumber: row.group_number,
     createdAt: row.created_at,
   };
 }
@@ -92,6 +93,18 @@ export async function awardEntries(guestId, sourceKey, count, label, client = su
   return { awarded: true };
 }
 
+export async function grantMyReward(source, client = supabase) {
+  const { data, error } = await client.rpc('grant_my_reward', { p_source: source });
+  if (error) throw error;
+  return data || { awarded: false, points: 0, entries: 0 };
+}
+
+export async function buyRaffleEntries(quantity, client = supabase) {
+  const { data, error } = await client.rpc('buy_raffle_entries', { p_quantity: quantity });
+  if (error) throw error;
+  return data || { ok: false };
+}
+
 function rowToLedgerEntry(row, countKey) {
   return {
     id: row.id,
@@ -137,6 +150,44 @@ export async function fetchAllEntries(client = supabase) {
   return data.map((r) => rowToLedgerEntry(r, 'count'));
 }
 
+export async function previewPointRedemption({ guestId, email } = {}, client = supabase) {
+  const { data, error } = await client.rpc('preview_point_redemption', {
+    p_guest_id: guestId || null,
+    p_email: email || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function redeemGuestPoints(guestId, amount, note, client = supabase) {
+  const { data, error } = await client.rpc('redeem_guest_points', {
+    p_guest_id: guestId,
+    p_amount: amount,
+    p_note: note || '',
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchPointRedemptions(client = supabase) {
+  const { data, error } = await client
+    .from('point_redemptions')
+    .select('id, guest_id, guest_name, email, amount, balance_before, note, created_at')
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.id,
+    guestId: row.guest_id,
+    guestName: row.guest_name,
+    email: row.email,
+    amount: row.amount,
+    balanceBefore: row.balance_before,
+    note: row.note,
+    createdAt: row.created_at,
+  }));
+}
+
 // ---- challenges -------------------------------------------------------
 
 function rowToChallenge(row) {
@@ -152,6 +203,7 @@ function rowToChallenge(row) {
     pointValue: row.point_value,
     entryValue: row.entry_value,
     proofType: row.proof_type,
+    choices: Array.isArray(row.choices) ? row.choices : [],
     unlock: row.unlock || { type: 'immediate' },
     completionMessage: row.completion_message,
     active: row.active,
@@ -171,6 +223,9 @@ function challengeToRow(c) {
     point_value: c.pointValue,
     entry_value: c.entryValue,
     proof_type: c.proofType,
+    choices: c.proofType === 'multiple_choice' && Array.isArray(c.choices)
+      ? c.choices.map((item) => String(item).trim()).filter(Boolean)
+      : [],
     unlock: c.unlock,
     completion_message: c.completionMessage,
     active: c.active,
@@ -184,6 +239,8 @@ export async function fetchChallenges(client = supabase) {
   return data.map(rowToChallenge);
 }
 
+const CHECKED_PROOF_TYPES = ['secret_code', 'qr_scan', 'multiple_choice'];
+
 export async function upsertChallenge(c, client = supabase) {
   const row = challengeToRow(c);
   const isNew = !c.id || String(c.id).startsWith('ch_');
@@ -191,7 +248,22 @@ export async function upsertChallenge(c, client = supabase) {
     ? await client.from('challenges').insert(row).select().single()
     : await client.from('challenges').update(row).eq('id', c.id).select().single();
   if (error) throw error;
-  return rowToChallenge(data);
+  const saved = rowToChallenge(data);
+  if (CHECKED_PROOF_TYPES.includes(saved.proofType) && c.answer !== undefined) {
+    const answer = String(c.answer).trim();
+    const { error: answerError } = await client
+      .from('challenge_answers')
+      .upsert({ challenge_id: saved.id, answer }, { onConflict: 'challenge_id' });
+    if (answerError) throw answerError;
+    saved.answer = answer;
+  }
+  return saved;
+}
+
+export async function fetchChallengeAnswers(client = supabase) {
+  const { data, error } = await client.from('challenge_answers').select('challenge_id, answer');
+  if (error) throw error;
+  return data || [];
 }
 
 export async function deleteChallenge(id, client = supabase) {
@@ -280,6 +352,37 @@ export async function deleteScheduleItem(id, client = supabase) {
   if (error) throw error;
 }
 
+// ---- venue areas ----------------------------------------------------------
+
+function rowToVenueArea(row) {
+  return { id: row.id, title: row.title, description: row.description, active: row.active, sortOrder: row.sort_order };
+}
+
+function venueAreaToRow(area) {
+  return { title: area.title, description: area.description, active: area.active, sort_order: area.sortOrder ?? 0 };
+}
+
+export async function fetchVenueAreas(client = supabase) {
+  const { data, error } = await client.from('venue_areas').select('*').order('sort_order');
+  if (error) throw error;
+  return data.map(rowToVenueArea);
+}
+
+export async function upsertVenueArea(area, client = supabase) {
+  const row = venueAreaToRow(area);
+  const isNew = !area.id;
+  const { data, error } = isNew
+    ? await client.from('venue_areas').insert(row).select().single()
+    : await client.from('venue_areas').update(row).eq('id', area.id).select().single();
+  if (error) throw error;
+  return rowToVenueArea(data);
+}
+
+export async function deleteVenueArea(id, client = supabase) {
+  const { error } = await client.from('venue_areas').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ---- announcements -------------------------------------------------------
 
 function rowToAnnouncement(row) {
@@ -299,11 +402,32 @@ export async function fetchAnnouncements(client = supabase) {
 export async function upsertAnnouncement(a, client = supabase) {
   const row = announcementToRow(a);
   const isNew = !a.id || String(a.id).startsWith('ann_') || String(a.id).startsWith('ann-');
+  let previous = null;
+  if (!isNew) {
+    const { data: existing } = await client.from('announcements').select('title, body, active').eq('id', a.id).maybeSingle();
+    previous = existing;
+  }
   const { data, error } = isNew
     ? await client.from('announcements').insert(row).select().single()
     : await client.from('announcements').update(row).eq('id', a.id).select().single();
   if (error) throw error;
-  return rowToAnnouncement(data);
+
+  const shouldNotify = data.active && (
+    !previous
+    || !previous.active
+    || previous.title !== data.title
+    || previous.body !== data.body
+  );
+  let pushError = null;
+  let sent = 0;
+  if (shouldNotify) {
+    const { data: pushResult, error: pushFailure } = await client.functions.invoke('send-announcement', {
+      body: { announcementId: data.id },
+    });
+    if (pushFailure) pushError = 'Phone alerts did not go out.';
+    else sent = pushResult?.sent || 0;
+  }
+  return { ...rowToAnnouncement(data), notified: shouldNotify && !pushError, sent, pushError };
 }
 
 export async function deleteAnnouncement(id, client = supabase) {
@@ -322,7 +446,7 @@ function prizeToRow(p) {
 }
 
 export async function fetchPrizes(client = supabase) {
-  const { data, error } = await client.from('prizes').select('*').order('sort_order');
+  const { data, error } = await client.from('prizes').select('*').order('sort_order').order('id');
   if (error) throw error;
   return data.map(rowToPrize);
 }
@@ -383,6 +507,42 @@ export async function updateRaffleConfig(patch, client = supabase) {
   return rowToRaffleConfig(data);
 }
 
+export async function fetchRaffleSpins(client = supabase) {
+  const { data, error } = await client.from('raffle_spins').select('*').order('spin_number');
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.id,
+    spinNumber: row.spin_number,
+    guestId: row.guest_id,
+    prizeId: row.prize_id,
+    prizeTitle: row.prize_title,
+    prizeDescription: row.prize_description,
+    email: row.email || '',
+    guestName: row.guest_name || '',
+    points: row.points,
+    tickets: row.tickets,
+    createdAt: row.created_at,
+    givenAt: row.given_at,
+  }));
+}
+
+export async function spinRaffle(client = supabase) {
+  const { data, error } = await client.rpc('spin_raffle');
+  if (error) throw error;
+  return data;
+}
+
+export async function undoRaffleSpin(client = supabase) {
+  const { data, error } = await client.rpc('undo_raffle_spin');
+  if (error) throw error;
+  return data;
+}
+
+export async function markRaffleSpinGiven(spinId, client = supabase) {
+  const { error } = await client.rpc('mark_raffle_spin_given', { p_spin_id: spinId });
+  if (error) throw error;
+}
+
 export async function drawRaffleWinner(client = supabase) {
   const { data, error } = await client.rpc('draw_raffle_winner');
   if (error) throw error;
@@ -428,6 +588,8 @@ export async function fetchAppConfig(client = supabase) {
     themeColors: data.theme_colors,
     huntTitle: data.hunt_title,
     huntBody: data.hunt_body,
+    raffleEnabled: !!data.raffle_enabled,
+    mapEnabled: !!data.map_enabled,
   };
 }
 
@@ -438,6 +600,8 @@ export async function updateAppConfig(patch, client = supabase) {
   if ('themeColors' in patch) dbPatch.theme_colors = patch.themeColors;
   if ('huntTitle' in patch) dbPatch.hunt_title = patch.huntTitle;
   if ('huntBody' in patch) dbPatch.hunt_body = patch.huntBody;
+  if ('raffleEnabled' in patch) dbPatch.raffle_enabled = patch.raffleEnabled;
+  if ('mapEnabled' in patch) dbPatch.map_enabled = patch.mapEnabled;
   const { data, error } = await client.from('app_config').update(dbPatch).eq('id', 1).select().single();
   if (error) throw error;
   return {
@@ -446,6 +610,8 @@ export async function updateAppConfig(patch, client = supabase) {
     themeColors: data.theme_colors,
     huntTitle: data.hunt_title,
     huntBody: data.hunt_body,
+    raffleEnabled: !!data.raffle_enabled,
+    mapEnabled: !!data.map_enabled,
   };
 }
 
@@ -474,6 +640,15 @@ export async function fetchAllCompletions(client = supabase) {
   const { data, error } = await client.from('completions').select('*');
   if (error) throw error;
   return data.map(rowToCompletion);
+}
+
+export async function submitCheckedProof(challengeId, value, client = supabase) {
+  const { data, error } = await client.rpc('submit_checked_proof', {
+    p_challenge_id: challengeId,
+    p_value: value ?? '',
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function submitCompletion(guestId, challengeId, proofType, proofPayload, status, client = supabase) {
@@ -516,19 +691,27 @@ export async function triggerHiddenChallenge(guestId, challengeId, client = supa
 // ---- combined content fetch (matches the old localStorage `content` shape) ---
 
 export async function fetchAllContent(client = supabase) {
-  const [challenges, vendors, scheduleItems, announcements, prizes, raffleConfig, appConfig] = await Promise.all([
+  const [challenges, vendors, scheduleItems, announcements, prizes, venueAreas, raffleConfig, appConfig, answers] = await Promise.all([
     fetchChallenges(client),
     fetchVendors(client),
     fetchSchedule(client),
     fetchAnnouncements(client),
     fetchPrizes(client),
+    fetchVenueAreas(client),
     fetchRaffleConfig(client),
     fetchAppConfig(client),
+    fetchChallengeAnswers(client),
   ]);
+  const answerByChallenge = new Map(answers.map((row) => [row.challenge_id, row.answer]));
   return {
-    challenges,
+    challenges: challenges.map((challenge) => (
+      answerByChallenge.has(challenge.id)
+        ? { ...challenge, answer: answerByChallenge.get(challenge.id) }
+        : challenge
+    )),
     vendors,
     scheduleItems,
+    venueAreas,
     announcements,
     prizes,
     raffleConfig,
@@ -537,6 +720,8 @@ export async function fetchAllContent(client = supabase) {
     themeColors: appConfig.themeColors,
     huntTitle: appConfig.huntTitle,
     huntBody: appConfig.huntBody,
+    raffleEnabled: appConfig.raffleEnabled,
+    mapEnabled: appConfig.mapEnabled,
   };
 }
 
@@ -590,6 +775,75 @@ export async function uploadGuestPhoto(blob, filename, client = supabase) {
   return data.publicUrl;
 }
 
+// ---- bingo -------------------------------------------------------------------
+
+export async function fetchBingoBoard(client = supabase) {
+  const { data, error } = await client.rpc('get_bingo_board');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function redeemBingoCode(squareId, code, client = supabase) {
+  const { data, error } = await client.rpc('redeem_bingo_code', { p_square_id: squareId, p_code: code });
+  if (error) throw error;
+  return data;
+}
+
+export async function completeBingoSquare(squareId, photo = null, client = supabase) {
+  const { data, error } = await client.rpc('complete_bingo_square', { p_square_id: squareId, p_photo: photo });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchBingoStaffBoard(client = supabase) {
+  const { data, error } = await client.rpc('get_bingo_staff_board');
+  if (error) throw error;
+  return data || { squares: [], pools: [] };
+}
+
+export async function fetchBingoSquareAnswers(client = supabase) {
+  const { data, error } = await client.rpc('get_bingo_square_answers');
+  if (error) throw error;
+  return data || {};
+}
+
+export async function setBingoSquareAnswer(squareId, answer, client = supabase) {
+  const { error } = await client.rpc('set_bingo_square_answer', {
+    p_square_id: squareId,
+    p_answer: answer || '',
+  });
+  if (error) throw error;
+}
+
+export async function advanceBingoPool(poolId, client = supabase) {
+  const { data, error } = await client.rpc('advance_bingo_pool', { p_pool_id: poolId });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateBingoSquare(square, client = supabase) {
+  const { error } = await client.rpc('update_bingo_square', {
+    p_id: square.id,
+    p_title: square.title,
+    p_prompt: square.prompt,
+    p_area: square.area,
+    p_points: square.points,
+    p_completion_mode: square.completionMode,
+    p_pool_id: square.poolId || null,
+    p_pool_offset: square.poolOffset ?? 0,
+  });
+  if (error) throw error;
+}
+
+export async function updateBingoVendorClue(vendorId, clue, codeWord, client = supabase) {
+  const { error } = await client.rpc('update_bingo_vendor_clue', {
+    p_vendor_id: vendorId,
+    p_clue: clue,
+    p_code_word: codeWord,
+  });
+  if (error) throw error;
+}
+
 // ---- realtime ---------------------------------------------------------------
 
 /**
@@ -603,14 +857,20 @@ export function subscribeToLiveChanges(onChange, client = supabase) {
     'challenges',
     'vendors',
     'schedule_items',
+    'venue_areas',
     'announcements',
     'prizes',
     'raffle_config',
+    'raffle_spins',
     'app_config',
     'points_ledger',
     'raffle_ledger',
     'completions',
     'triggered_hidden',
+    'guests',
+    'bingo_rotation',
+    'bingo_completions',
+    'bingo_squares',
   ];
   const channel = client.channel('loc-party-live');
   tables.forEach((table) => {

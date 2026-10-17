@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Local Supabase stack. SQL migrations stay tracked.
+supabase/.temp/
+supabase/.branches/
+supabase/config.toml
+supabase/seed.sql
+supabase/.gitignore
+supabase/functions/.env
+supabase/functions/send-announcement/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
