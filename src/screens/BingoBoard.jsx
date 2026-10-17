@@ -1,9 +1,23 @@
-import { Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
+import BingoSquare from './BingoSquare.jsx';
+
+function squareLabel(square) {
+  if (square.completionMode === 'vendor_code') return 'Vendor Clue';
+  if (square.poolId === 'games' && square.assignmentName) return square.assignmentName;
+  return square.title;
+}
 
 export default function BingoBoard() {
+  const { squareId } = useParams();
+  const navigate = useNavigate();
   const { bingoBoard } = useAppState();
   const done = bingoBoard.filter((square) => square.completed).length;
+  const openSquare = squareId ? bingoBoard.find((square) => square.id === squareId) : null;
+
+  function close() {
+    navigate('/bingo');
+  }
 
   return (
     <div className="screen">
@@ -20,15 +34,39 @@ export default function BingoBoard() {
       ) : (
         <div className="bingo-grid">
           {bingoBoard.map((square) => (
-            <Link
+            <button
               key={square.id}
-              to={`/bingo/${square.id}`}
+              type="button"
               className={`bingo-cell${square.completed ? ' done' : ''}${square.id === 'free' ? ' free' : ''}`}
+              onClick={() => navigate(`/bingo/${square.id}`)}
             >
-              <strong>{square.title}</strong>
+              <strong>{squareLabel(square)}</strong>
               <span>{square.completed ? 'Done' : `+${square.points}`}</span>
-            </Link>
+            </button>
           ))}
+        </div>
+      )}
+
+      {squareId && (
+        <div className="bingo-modal-overlay" onClick={close}>
+          <div
+            className="bingo-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bingo-square-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {openSquare ? (
+              <BingoSquare square={openSquare} onClose={close} />
+            ) : bingoBoard.length > 0 ? (
+              <div className="stack">
+                <div className="empty-state">That square isn't on this card.</div>
+                <button type="button" className="btn btn-secondary" onClick={close}>Close</button>
+              </div>
+            ) : (
+              <p className="field-hint">Loading…</p>
+            )}
+          </div>
         </div>
       )}
     </div>

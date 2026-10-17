@@ -150,6 +150,44 @@ export async function fetchAllEntries(client = supabase) {
   return data.map((r) => rowToLedgerEntry(r, 'count'));
 }
 
+export async function previewPointRedemption({ guestId, email } = {}, client = supabase) {
+  const { data, error } = await client.rpc('preview_point_redemption', {
+    p_guest_id: guestId || null,
+    p_email: email || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function redeemGuestPoints(guestId, amount, note, client = supabase) {
+  const { data, error } = await client.rpc('redeem_guest_points', {
+    p_guest_id: guestId,
+    p_amount: amount,
+    p_note: note || '',
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchPointRedemptions(client = supabase) {
+  const { data, error } = await client
+    .from('point_redemptions')
+    .select('id, guest_id, guest_name, email, amount, balance_before, note, created_at')
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.id,
+    guestId: row.guest_id,
+    guestName: row.guest_name,
+    email: row.email,
+    amount: row.amount,
+    balanceBefore: row.balance_before,
+    note: row.note,
+    createdAt: row.created_at,
+  }));
+}
+
 // ---- challenges -------------------------------------------------------
 
 function rowToChallenge(row) {
@@ -484,6 +522,7 @@ export async function fetchRaffleSpins(client = supabase) {
     points: row.points,
     tickets: row.tickets,
     createdAt: row.created_at,
+    givenAt: row.given_at,
   }));
 }
 
@@ -497,6 +536,11 @@ export async function undoRaffleSpin(client = supabase) {
   const { data, error } = await client.rpc('undo_raffle_spin');
   if (error) throw error;
   return data;
+}
+
+export async function markRaffleSpinGiven(spinId, client = supabase) {
+  const { error } = await client.rpc('mark_raffle_spin_given', { p_spin_id: spinId });
+  if (error) throw error;
 }
 
 export async function drawRaffleWinner(client = supabase) {
@@ -755,6 +799,20 @@ export async function fetchBingoStaffBoard(client = supabase) {
   const { data, error } = await client.rpc('get_bingo_staff_board');
   if (error) throw error;
   return data || { squares: [], pools: [] };
+}
+
+export async function fetchBingoSquareAnswers(client = supabase) {
+  const { data, error } = await client.rpc('get_bingo_square_answers');
+  if (error) throw error;
+  return data || {};
+}
+
+export async function setBingoSquareAnswer(squareId, answer, client = supabase) {
+  const { error } = await client.rpc('set_bingo_square_answer', {
+    p_square_id: squareId,
+    p_answer: answer || '',
+  });
+  if (error) throw error;
 }
 
 export async function advanceBingoPool(poolId, client = supabase) {

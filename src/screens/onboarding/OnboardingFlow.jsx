@@ -103,6 +103,7 @@ export default function OnboardingFlow() {
         <div className="stack">
           <span className="eyebrow">Step 1 of 4</span>
           <h2>{alreadyHasSession ? 'What should we call you?' : "Let's get you set up"}</h2>
+          <p>Presented by the Entwined Collection</p>
           <p>
             {alreadyHasSession
               ? 'This shows up on your profile and the leaderboard.'

@@ -11,19 +11,25 @@ function modeLabel(square) {
   if (square.id === 'free' || square.completionMode === 'free') return 'Free';
   if (square.completionMode === 'photo') return 'Photo';
   if (square.completionMode === 'vendor_code') return 'Answer';
+  if (square.completionMode === 'answer') return 'Question';
+  if (square.completionMode === 'true_false') return 'True / false';
   if (square.poolId) return 'Category';
   return 'Self';
 }
 
-function vendorClues(pool) {
+function vendorClues(pool, riddles) {
   const clues = {};
   for (const member of pool?.members || []) {
     if (!member.vendorId) continue;
+    const chosen = (riddles || []).find(
+      (riddle) => riddle.vendorId === member.vendorId && riddle.clue === (member.clue || ''),
+    );
     clues[member.vendorId] = {
       vendorId: member.vendorId,
       name: member.name,
       clue: member.clue || '',
       codeWord: member.codeWord || '',
+      riddleId: chosen?.id || '',
     };
   }
   return clues;
@@ -51,7 +57,8 @@ export default function AdminBingo() {
       completionMode: square.id === 'free' ? 'free' : square.completionMode,
       poolId,
       poolOffset: square.poolOffset || 0,
-      clues: vendorClues(pools.find((pool) => pool.id === poolId)),
+      secretAnswer: bingoStaff?.answers?.[square.id] || '',
+      clues: vendorClues(pools.find((pool) => pool.id === poolId), bingoStaff?.riddles),
     });
   }
 
@@ -59,7 +66,23 @@ export default function AdminBingo() {
     setEditing((current) => ({
       ...current,
       poolId,
-      clues: vendorClues(pools.find((pool) => pool.id === poolId)),
+      clues: vendorClues(pools.find((pool) => pool.id === poolId), bingoStaff?.riddles),
+    }));
+  }
+
+  function chooseRiddle(vendorId, riddleId) {
+    const riddle = (bingoStaff?.riddles || []).find((item) => item.id === riddleId);
+    setEditing((current) => ({
+      ...current,
+      clues: {
+        ...current.clues,
+        [vendorId]: {
+          ...current.clues[vendorId],
+          riddleId,
+          clue: riddle ? riddle.clue : current.clues[vendorId].clue,
+          codeWord: riddle ? riddle.answer : current.clues[vendorId].codeWord,
+        },
+      },
     }));
   }
 
@@ -90,6 +113,7 @@ export default function AdminBingo() {
           completionMode: editing.completionMode,
           poolId: usesPool ? editing.poolId : null,
           poolOffset: usesPool ? Number(editing.poolOffset) || 0 : 0,
+          secretAnswer: editing.secretAnswer || '',
         },
         editing.completionMode === 'vendor_code' ? Object.values(editing.clues) : [],
       );
@@ -142,19 +166,47 @@ export default function AdminBingo() {
                 const completionMode = e.target.value;
                 const poolId = completionMode === 'vendor_code' && !editing.poolId
                   ? (vendorPools[0]?.id || '')
-                  : editing.poolId;
+                  : (completionMode === 'answer' || completionMode === 'true_false' ? '' : editing.poolId);
+                const secretAnswer = completionMode === 'true_false'
+                  && editing.secretAnswer !== 'TRUE'
+                  && editing.secretAnswer !== 'FALSE'
+                  ? 'TRUE'
+                  : editing.secretAnswer;
                 setEditing({
                   ...editing,
                   completionMode,
                   poolId,
-                  clues: vendorClues(pools.find((pool) => pool.id === poolId)),
+                  secretAnswer,
+                  clues: vendorClues(pools.find((pool) => pool.id === poolId), bingoStaff?.riddles),
                 });
               }}
             >
               <option value="self">I did this</option>
               <option value="photo">Photo</option>
               <option value="vendor_code">Answer from the assigned booth</option>
+              <option value="answer">Typed answer</option>
+              <option value="true_false">True or false</option>
             </select>
+          </div>
+        )}
+        {(editing.completionMode === 'answer' || editing.completionMode === 'true_false') && (
+          <div className="field">
+            <label>{editing.completionMode === 'true_false' ? 'Correct answer' : 'Accepted answer'}</label>
+            {editing.completionMode === 'true_false' ? (
+              <select
+                value={editing.secretAnswer === 'FALSE' ? 'FALSE' : 'TRUE'}
+                onChange={(e) => setEditing({ ...editing, secretAnswer: e.target.value })}
+              >
+                <option value="TRUE">True</option>
+                <option value="FALSE">False</option>
+              </select>
+            ) : (
+              <input
+                value={editing.secretAnswer || ''}
+                onChange={(e) => setEditing({ ...editing, secretAnswer: e.target.value })}
+              />
+            )}
+            <p className="field-hint">Guests do not see this. Leave a typed answer blank to keep the square locked until you set the code. Switch this square to “I did this” if you want guests to self-report instead.</p>
           </div>
         )}
         {showCategory && !isFree && (
@@ -174,7 +226,7 @@ export default function AdminBingo() {
                 <label>Category</label>
                 <select value={editing.poolId} onChange={(e) => setPool(e.target.value)}>
                   {(needsAnswer ? vendorPools : pools).map((pool) => (
-                    <option key={pool.id} value={pool.id}>{pool.label}</option>
+                    <option key={pool.id} value={pool.id}>{pool.id === 'fashion' ? 'Marketplace' : pool.label}</option>
                   ))}
                 </select>
               </div>
@@ -197,18 +249,31 @@ export default function AdminBingo() {
         )}
         {needsAnswer && (
           <div className="stack">
-            <p className="field-hint">The clue is shown to the guest. The answer is checked and stays hidden. The booth list itself stays as it is.</p>
-            {Object.values(editing.clues).map((clue) => (
+            <p className="field-hint">Choose the riddle for each booth. The guest sees the riddle, and the answer stays hidden. The booth list itself stays as it is.</p>
+            {Object.values(editing.clues).map((clue) => {
+              const options = (bingoStaff?.riddles || []).filter((riddle) => riddle.vendorId === clue.vendorId);
+              return (
               <div key={clue.vendorId} className="card flat">
                 <h3 style={{ marginTop: 0 }}>{clue.name}</h3>
+                {options.length > 0 && (
+                  <div className="field">
+                    <label>Riddle</label>
+                    <select value={clue.riddleId} onChange={(e) => chooseRiddle(clue.vendorId, e.target.value)}>
+                      <option value="">Custom</option>
+                      {options.map((riddle) => (
+                        <option key={riddle.id} value={riddle.id}>{riddle.answer}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="field">
                   <label>Clue</label>
                   <textarea
-                    rows={2}
+                    rows={5}
                     value={clue.clue}
                     onChange={(e) => setEditing({
                       ...editing,
-                      clues: { ...editing.clues, [clue.vendorId]: { ...clue, clue: e.target.value } },
+                      clues: { ...editing.clues, [clue.vendorId]: { ...clue, clue: e.target.value, riddleId: '' } },
                     })}
                   />
                 </div>
@@ -223,7 +288,8 @@ export default function AdminBingo() {
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <div className="row" style={{ gap: 10 }}>
@@ -262,7 +328,7 @@ export default function AdminBingo() {
       {pools.map((pool) => (
         <div key={pool.id} className="card flat">
           <div className="row-between">
-            <h3 style={{ margin: 0 }}>{pool.label}</h3>
+            <h3 style={{ margin: 0 }}>{pool.id === 'fashion' ? 'Marketplace' : pool.label}</h3>
             <button className="btn btn-secondary btn-sm" disabled={busyPool === pool.id} onClick={() => advance(pool.id)}>
               {busyPool === pool.id ? 'Moving…' : 'Next in rotation'}
             </button>

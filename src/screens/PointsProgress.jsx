@@ -27,7 +27,9 @@ export default function PointsProgress() {
           {pointsHistory.map((h) => (
             <div key={h.id} className="card flat row-between">
               <span>{h.label}</span>
-              <strong style={{ color: 'var(--accent)' }}>+{h.amount}</strong>
+              <strong style={{ color: h.amount < 0 ? 'var(--danger)' : 'var(--accent)' }}>
+                {h.amount > 0 ? `+${h.amount}` : h.amount}
+              </strong>
             </div>
           ))}
         </div>

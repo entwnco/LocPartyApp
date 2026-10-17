@@ -51,12 +51,6 @@ export default function Profile() {
     <div className="screen">
       <BackHeader eyebrow="My profile" title="Edit details" />
 
-      <div className="field">
-        <label>Party group</label>
-        <p style={{ margin: 0 }}>Group {guest.groupNumber}</p>
-        <p className="field-hint">Assigned when you joined. It stays with you for the event.</p>
-      </div>
-
       <form
         className="stack"
         onSubmit={async (e) => {
@@ -201,13 +195,6 @@ export default function Profile() {
 
       <hr className="divider" />
       <InstallPrompt />
-      <div className="field">
-        <label>Save to your home screen</label>
-        <p className="field-hint">
-          On iPhone, tap Share then "Add to Home Screen." On Android, tap the menu then "Add to Home Screen" or
-          "Install app."
-        </p>
-      </div>
 
       <button
         type="button"

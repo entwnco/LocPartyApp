@@ -65,7 +65,11 @@ export function AdminStateProvider({ children }) {
   }, []);
 
   const loadBingoStaff = useCallback(async () => {
-    setBingoStaff(await api.fetchBingoStaffBoard(supabaseAdmin));
+    const [board, answers] = await Promise.all([
+      api.fetchBingoStaffBoard(supabaseAdmin),
+      api.fetchBingoSquareAnswers(supabaseAdmin),
+    ]);
+    setBingoStaff({ ...board, answers: answers || {} });
   }, []);
 
   const loadSpins = useCallback(async () => {
@@ -82,6 +86,14 @@ export function AdminStateProvider({ children }) {
       await api.updateBingoVendorClue(clue.vendorId, clue.clue, clue.codeWord, supabaseAdmin);
     }
     await api.updateBingoSquare(square, supabaseAdmin);
+    if (square.completionMode === 'answer' || square.completionMode === 'true_false') {
+      await api.setBingoSquareAnswer(square.id, square.secretAnswer || '', supabaseAdmin);
+    }
+    await loadBingoStaff();
+  }, [loadBingoStaff]);
+
+  const saveVendorCode = useCallback(async (vendorId, clue, codeWord) => {
+    await api.updateBingoVendorClue(vendorId, clue, codeWord, supabaseAdmin);
     await loadBingoStaff();
   }, [loadBingoStaff]);
 
@@ -233,6 +245,11 @@ export function AdminStateProvider({ children }) {
     await loadSpins();
     return result;
   }, [loadSpins]);
+
+  const markSpinGiven = useCallback(async (spinId) => {
+    await api.markRaffleSpinGiven(spinId, supabaseAdmin);
+    await loadSpins();
+  }, [loadSpins]);
   const resetRaffleAction = useCallback(async () => {
     await api.resetRaffle(supabaseAdmin);
     await refreshContent();
@@ -272,6 +289,22 @@ export function AdminStateProvider({ children }) {
     },
     [loadAll]
   );
+
+  const previewRedemption = useCallback(
+    ({ guestId, email } = {}) => api.previewPointRedemption({ guestId, email }, supabaseAdmin),
+    []
+  );
+
+  const redeemGuestPoints = useCallback(
+    async (guestId, amount, note) => {
+      const result = await api.redeemGuestPoints(guestId, amount, note, supabaseAdmin);
+      await loadAll();
+      return result;
+    },
+    [loadAll]
+  );
+
+  const loadRedemptions = useCallback(() => api.fetchPointRedemptions(supabaseAdmin), []);
 
   const totalPoints = useMemo(() => pointsLedger.reduce((s, e) => s + e.amount, 0), [pointsLedger]);
   const totalEntries = useMemo(() => raffleLedger.reduce((s, e) => s + e.count, 0), [raffleLedger]);
@@ -316,6 +349,7 @@ export function AdminStateProvider({ children }) {
     announceWinner,
     spinRaffle,
     undoLastSpin,
+    markSpinGiven,
     resetRaffleAction,
 
     savePointValues,
@@ -326,11 +360,15 @@ export function AdminStateProvider({ children }) {
 
     reviewCompletion,
     triggerHiddenChallenge,
+    previewRedemption,
+    redeemGuestPoints,
+    loadRedemptions,
 
     bingoStaff,
     loadBingoStaff,
     advanceBingoPool,
     saveBingoSquare,
+    saveVendorCode,
   };
 
   return <AdminStateContext.Provider value={value}>{children}</AdminStateContext.Provider>;

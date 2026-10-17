@@ -35,6 +35,7 @@ export default function Login() {
       </button>
       <span className="eyebrow">Welcome back</span>
       <h2>Log in</h2>
+      <p>Presented by the Entwined Collection</p>
       <p>Already checked in on another device? Sign in with the same email and password.</p>
       {showReset ? (
         <form

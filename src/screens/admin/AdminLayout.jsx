@@ -4,7 +4,9 @@ import { useAdminState } from '../../state/AdminState.jsx';
 const TABS = [
   { to: '/admin/overview', label: 'Overview' },
   { to: '/admin/guests', label: 'Guests' },
+  { to: '/admin/redeem', label: 'Redeem' },
   { to: '/admin/bingo', label: 'Bingo' },
+  { to: '/admin/codes', label: 'Codes' },
   { to: '/admin/challenges', label: 'Challenges' },
   { to: '/admin/vendors', label: 'Vendors' },
   { to: '/admin/schedule', label: 'Schedule' },

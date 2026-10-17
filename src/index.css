@@ -24,7 +24,7 @@
   --danger: #ff6b6b;
   --warn: #f2b33d;
 
-  /* default accent before a party group is known */
+  /* default accent before a relationship status is chosen */
   --accent: #ff7a1a;
   --accent-ink: #17130d;
 
@@ -40,32 +40,10 @@
   --space-loose-lg: 32px;
 }
 
-/* Party group sets the main accent. Group 1 is dark blue. */
-[data-group='1'] {
-  --accent: #0a3278;
-  --accent-ink: #ffffff;
-}
-[data-group='2'] {
-  --accent: #c46a12;
-  --accent-ink: #1a1004;
-}
-[data-group='3'] {
-  --accent: #0e7a52;
-  --accent-ink: #ffffff;
-}
-[data-group='4'] {
-  --accent: #9a2454;
-  --accent-ink: #ffffff;
-}
-[data-group='5'] {
-  --accent: #5c2d91;
-  --accent-ink: #ffffff;
-}
-
 /* ---- relationship-status accent themes ---- */
 [data-theme='single'] {
-  --accent: #ff5c5c;
-  --accent-ink: #2a0808;
+  --accent: #2f5fde;
+  --accent-ink: #ffffff;
 }
 [data-theme='dating'] {
   --accent: #9b5de5;
@@ -80,8 +58,8 @@
   --accent-ink: #2a0f16;
 }
 [data-theme='private'] {
-  --accent: #c9a15a;
-  --accent-ink: #221a0c;
+  --accent: #ee3a2f;
+  --accent-ink: #ffffff;
 }
 
 * {
@@ -243,6 +221,11 @@ textarea {
 .entrance-copy p {
   margin: 0;
   max-width: 320px;
+}
+
+.entrance-presenter {
+  max-width: none;
+  white-space: nowrap;
 }
 
 .entrance-title {
@@ -984,14 +967,16 @@ button.bingo-cell {
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
   gap: 4px;
   padding: 6px;
-  border: 1px solid var(--line);
+  border: 2px solid var(--accent);
   border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  color: var(--text);
-  text-align: left;
+  background: #fff;
+  color: #111;
+  text-align: center;
+  text-transform: uppercase;
   min-width: 0;
 }
 
@@ -1000,16 +985,54 @@ button.bingo-cell {
   font-size: 0.68rem;
   line-height: 1.15;
   font-weight: 700;
+  color: #111;
 }
 
 .bingo-cell span {
   font-size: 0.62rem;
-  color: var(--text-dim);
+  color: #111;
 }
 
 .bingo-cell.done {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 28%, var(--bg-elevated));
+  background: #fff;
+  color: #111;
+}
+
+.bingo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.bingo-modal {
+  width: min(100%, 560px);
+  max-height: min(88svh, 760px);
+  overflow: auto;
+  background: var(--bg);
+  color: var(--text);
+  border: 1.5px solid var(--line);
+  border-top: 5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: left;
+}
+
+.bingo-modal .stack,
+.bingo-modal .field {
+  align-items: stretch;
+  width: 100%;
+}
+
+.bingo-modal .field input,
+.bingo-modal .btn-block,
+.bingo-modal .upload-box {
+  width: 100%;
 }
 
 .bingo-cell.free {

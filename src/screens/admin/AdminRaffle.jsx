@@ -6,9 +6,9 @@ function ticketsFor(points) {
 }
 
 export default function AdminRaffle() {
-  const { guests, pointsLedger, spins, spinRaffle, undoLastSpin } = useAdminState();
+  const { content, guests, pointsLedger, spins, spinRaffle, undoLastSpin, markSpinGiven } = useAdminState();
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState('');
 
   const pointsByGuest = useMemo(() => {
     const map = new Map();
@@ -29,16 +29,41 @@ export default function AdminRaffle() {
   }, [guests, pointsByGuest, wonIds]);
 
   const totalTickets = pool.reduce((sum, row) => sum + row.tickets, 0);
+  const prizes = useMemo(
+    () => content.prizes.filter((prize) => prize.active).slice().sort((a, b) => a.sortOrder - b.sortOrder),
+    [content.prizes],
+  );
+  const lastSpinGiven = spins.length > 0 && !!spins[spins.length - 1].givenAt;
+
+  function prizeLabel(spinRow) {
+    if (spinRow.prizeTitle) return spinRow.prizeTitle;
+    return prizes[spinRow.spinNumber - 1]?.title || '';
+  }
 
   async function spin() {
     setError('');
-    setBusy(true);
+    setBusy('spin');
     try {
       await spinRaffle();
     } catch (err) {
       setError(err?.message || 'The spin did not finish.');
     } finally {
-      setBusy(false);
+      setBusy('');
+    }
+  }
+
+  async function give(spinRow) {
+    const prize = prizeLabel(spinRow);
+    const name = guests.find((item) => item.id === spinRow.guestId)?.displayName || spinRow.guestName || 'this guest';
+    if (!confirm(`Mark ${prize || 'this prize'} given to ${name}?`)) return;
+    setError('');
+    setBusy('give');
+    try {
+      await markSpinGiven(spinRow.id);
+    } catch (err) {
+      setError(err?.message || 'Could not mark that prize given.');
+    } finally {
+      setBusy('');
     }
   }
 
@@ -47,13 +72,13 @@ export default function AdminRaffle() {
     const last = spins[spins.length - 1];
     if (!confirm(`Undo spin ${last.spinNumber}?`)) return;
     setError('');
-    setBusy(true);
+    setBusy('undo');
     try {
       await undoLastSpin();
     } catch (err) {
       setError(err?.message || 'Could not undo that spin.');
     } finally {
-      setBusy(false);
+      setBusy('');
     }
   }
 
@@ -62,7 +87,7 @@ export default function AdminRaffle() {
       <div>
         <h2 style={{ marginBottom: 6 }}>Draw</h2>
         <p className="field-hint">
-          Spins are the winner list, in order. Match prizes to that order in person. A guest’s tickets are their points divided by 50, rounded down. Nobody wins twice.
+          Spins are the winner list, in order. Prize 1 goes to spin 1. Mark a spin given when the prize is in their hands. A guest’s tickets are their points divided by 50, rounded down. Nobody wins twice.
         </p>
       </div>
 
@@ -81,10 +106,10 @@ export default function AdminRaffle() {
         <span className="eyebrow">Next spin</span>
         <h3 style={{ marginTop: 8 }}>{spins.length + 1}</h3>
         <div className="row" style={{ gap: 10 }}>
-          <button className="btn btn-primary" onClick={spin} disabled={busy}>
-            {busy ? 'Spinning…' : 'Spin'}
+          <button className="btn btn-primary" onClick={spin} disabled={!!busy}>
+            {busy === 'spin' ? 'Spinning…' : 'Spin'}
           </button>
-          <button className="btn btn-secondary" onClick={undo} disabled={busy || spins.length === 0}>
+          <button className="btn btn-secondary" onClick={undo} disabled={!!busy || spins.length === 0 || lastSpinGiven}>
             Undo last spin
           </button>
         </div>
@@ -99,15 +124,25 @@ export default function AdminRaffle() {
         spins.map((spinRow) => {
           const guest = guests.find((item) => item.id === spinRow.guestId);
           const name = guest?.displayName || spinRow.guestName || 'Guest';
+          const prize = prizeLabel(spinRow);
           return (
             <div key={spinRow.id} className="card flat">
-              <span className="eyebrow">Spin {spinRow.spinNumber}</span>
+              <div className="row-between">
+                <span className="eyebrow">Spin {spinRow.spinNumber}</span>
+                {spinRow.givenAt ? <span className="tag">Given</span> : null}
+              </div>
               <h3 style={{ margin: '8px 0 4px' }}>{name}</h3>
-              <p style={{ margin: 0 }}>{spinRow.email || 'No email on the account'}</p>
-              <p className="field-hint" style={{ marginBottom: 0 }}>
+              <p style={{ margin: 0 }}>{prize || 'No prize lined up for this spin'}</p>
+              <p style={{ margin: '4px 0 0' }}>{spinRow.email || 'No email on the account'}</p>
+              <p className="field-hint" style={{ marginBottom: spinRow.givenAt ? 0 : 10 }}>
                 {guest?.groupNumber ? `Group ${guest.groupNumber} · ` : ''}
                 {spinRow.tickets} {spinRow.tickets === 1 ? 'ticket' : 'tickets'} from {spinRow.points} points
               </p>
+              {!spinRow.givenAt && (
+                <button className="btn btn-primary btn-sm" disabled={!!busy} onClick={() => give(spinRow)}>
+                  {busy === 'give' ? 'Saving…' : 'Mark given'}
+                </button>
+              )}
             </div>
           );
         })

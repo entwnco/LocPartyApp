@@ -8,7 +8,7 @@ export default function Venue() {
     <div className="screen">
       <div>
         <span className="eyebrow">Venue</span>
-        <h1>Find your way</h1>
+        <h1>Loc Party Activations</h1>
       </div>
       {areas.length === 0 ? (
         <div className="empty-state">Venue areas are still being set.</div>

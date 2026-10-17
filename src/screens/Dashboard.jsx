@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
 import AnnouncementAlerts from '../components/AnnouncementAlerts.jsx';
 import InstallPrompt from '../components/InstallPrompt.jsx';
+import { useUnseenAnnouncement } from '../lib/seenAnnouncements.js';
 
 export default function Dashboard() {
   const { guest, pointsTotal, entryCount, bingoBoard, content } = useAppState();
   const bingoDone = bingoBoard.filter((s) => s.completed).length;
+  const unseenAnnouncement = useUnseenAnnouncement();
 
   return (
     <div className="screen">
@@ -13,7 +15,6 @@ export default function Dashboard() {
         <span className="eyebrow">Welcome</span>
         <h1>Hey, {guest.displayName} 👋🏾</h1>
         <p>You're locked in and the party is LIVE! Here's where things stand.</p>
-        {guest.groupNumber ? <p>You're in Group {guest.groupNumber}.</p> : null}
       </div>
 
       <InstallPrompt />
@@ -41,9 +42,6 @@ export default function Dashboard() {
       <Link to="/bingo" className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
         <span className="eyebrow">25 squares</span>
         <h3 style={{ marginTop: 8 }}>{bingoDone} completed</h3>
-        <p className="field-hint" style={{ marginBottom: 0 }}>
-          Loc-shop booths and Game Stop rotate. Your group color is on every screen.
-        </p>
       </Link>
 
       <div className="menu-grid">
@@ -58,6 +56,10 @@ export default function Dashboard() {
         <Link to="/schedule" className="menu-tile">
           <strong>Schedule</strong>
           <span>What's happening when</span>
+        </Link>
+        <Link to="/announcements" className={unseenAnnouncement ? 'menu-tile menu-tile-unseen' : 'menu-tile'}>
+          <strong>Announcements</strong>
+          <span>{unseenAnnouncement ? 'New update' : 'See the latest updates'}</span>
         </Link>
       </div>
     </div>

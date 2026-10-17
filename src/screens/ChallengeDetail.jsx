@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppState } from '../state/AppState.jsx';
 import { fileToResizedDataUrl } from '../lib/image.js';
+import { createQrDetector } from '../lib/qrReader.js';
 
 const MAX_VIDEO_BYTES = 8 * 1024 * 1024;
 
@@ -63,15 +64,11 @@ export default function ChallengeDetail() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!('BarcodeDetector' in window)) {
-      setError('This browser cannot read a QR photo. Type the code instead.');
-      return;
-    }
     setBusy(true);
     setError('');
     try {
       const bitmap = await createImageBitmap(file);
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+      const detector = await createQrDetector();
       const codes = await detector.detect(bitmap);
       bitmap.close?.();
       const value = codes[0]?.rawValue;
@@ -231,7 +228,7 @@ function QrScanner({ disabled, onScan }) {
   }, [disabled]);
 
   useEffect(() => {
-    if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       setStatus('unsupported');
       return undefined;
     }
@@ -240,15 +237,17 @@ function QrScanner({ disabled, onScan }) {
     let stopped = false;
     let timer;
     let pauseUntil = 0;
-    let detector;
-    try {
-      detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-    } catch {
-      setStatus('unsupported');
-      return undefined;
-    }
 
     (async () => {
+      let detector;
+      try {
+        detector = await createQrDetector();
+      } catch {
+        if (!stopped) setStatus('unsupported');
+        return;
+      }
+      if (stopped) return;
+
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },

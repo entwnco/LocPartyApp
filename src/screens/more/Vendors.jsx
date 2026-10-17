@@ -9,6 +9,10 @@ const CATEGORY_ORDER = [
   'Community & Services',
 ];
 
+function isEntwined(vendor) {
+  return /entwined/i.test(vendor.name || '');
+}
+
 export default function Vendors() {
   const { content } = useAppState();
   const vendors = content.vendors.filter((v) => v.active);
@@ -18,9 +22,11 @@ export default function Vendors() {
     if (!byCategory.has(category)) byCategory.set(category, []);
     byCategory.get(category).push(vendor);
   }
+  const entwinedCategory = vendors.find(isEntwined)?.category;
   const categories = [
-    ...CATEGORY_ORDER.filter((name) => byCategory.has(name)),
-    ...[...byCategory.keys()].filter((name) => !CATEGORY_ORDER.includes(name)),
+    ...(entwinedCategory && byCategory.has(entwinedCategory) ? [entwinedCategory] : []),
+    ...CATEGORY_ORDER.filter((name) => name !== entwinedCategory && byCategory.has(name)),
+    ...[...byCategory.keys()].filter((name) => name !== entwinedCategory && !CATEGORY_ORDER.includes(name)),
   ];
 
   return (
@@ -30,7 +36,14 @@ export default function Vendors() {
         <section key={category} className="stack">
           <h2>{category}</h2>
           {[...byCategory.get(category)]
-            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+            .sort((a, b) => {
+              if (category === entwinedCategory) {
+                const aFirst = isEntwined(a);
+                const bFirst = isEntwined(b);
+                if (aFirst !== bFirst) return aFirst ? -1 : 1;
+              }
+              return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+            })
             .map((vendor) => (
               <VendorCard key={vendor.id} vendor={vendor} />
             ))}
@@ -41,7 +54,7 @@ export default function Vendors() {
   );
 }
 
-function VendorCard({ vendor }) {
+export function VendorCard({ vendor }) {
   return (
     <div className="card flat">
       {vendor.logoUrl && <img src={vendor.logoUrl} alt={`${vendor.name} photo`} className="vendor-card-logo" />}
