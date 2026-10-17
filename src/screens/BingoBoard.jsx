@@ -9,20 +9,30 @@ function SquareTitle({ children }) {
     const el = ref.current;
     const cell = el?.parentElement;
     if (!el || !cell) return;
-    let size = 13;
-    const fits = () => {
+    const fit = () => {
       const box = cell.getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      return [...range.getClientRects()].every(
-        (rect) => rect.left >= box.left + 1 && rect.right <= box.right - 1 && rect.bottom <= box.bottom - 1
-      );
-    };
-    el.style.fontSize = `${size}px`;
-    while (size > 9 && !fits()) {
-      size -= 0.5;
+      const style = getComputedStyle(cell);
+      const left = box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+      const right = box.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight);
+      const bottom = box.bottom - parseFloat(style.borderBottomWidth) - parseFloat(style.paddingBottom);
+      const max = box.width < 88 ? 8.5 : 13;
+      let size = max;
+      const fits = () => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return [...range.getClientRects()].every(
+          (rect) => rect.left >= left && rect.right <= right && rect.bottom <= bottom
+        );
+      };
       el.style.fontSize = `${size}px`;
-    }
+      while (size > 6.5 && !fits()) {
+        size -= 0.5;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
   }, [children]);
   return <strong ref={ref}>{children}</strong>;
 }
