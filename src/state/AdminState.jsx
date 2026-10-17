@@ -47,7 +47,7 @@ export function AdminStateProvider({ children }) {
   const [spins, setSpins] = useState([]);
 
   const loadContent = useCallback(async () => {
-    const c = await api.fetchAllContent(supabaseAdmin);
+    const c = await api.fetchAllContent(supabaseAdmin, { withAnswers: true });
     setContent(c);
   }, []);
 

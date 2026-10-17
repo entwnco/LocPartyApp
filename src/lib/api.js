@@ -690,7 +690,7 @@ export async function triggerHiddenChallenge(guestId, challengeId, client = supa
 
 // ---- combined content fetch (matches the old localStorage `content` shape) ---
 
-export async function fetchAllContent(client = supabase) {
+export async function fetchAllContent(client = supabase, { withAnswers = false } = {}) {
   const [challenges, vendors, scheduleItems, announcements, prizes, venueAreas, raffleConfig, appConfig, answers] = await Promise.all([
     fetchChallenges(client),
     fetchVendors(client),
@@ -700,7 +700,7 @@ export async function fetchAllContent(client = supabase) {
     fetchVenueAreas(client),
     fetchRaffleConfig(client),
     fetchAppConfig(client),
-    fetchChallengeAnswers(client),
+    withAnswers ? fetchChallengeAnswers(client) : Promise.resolve([]),
   ]);
   const answerByChallenge = new Map(answers.map((row) => [row.challenge_id, row.answer]));
   return {
