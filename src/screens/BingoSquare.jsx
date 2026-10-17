@@ -2,6 +2,29 @@ import { useEffect, useState } from 'react';
 import { useAppState } from '../state/AppState.jsx';
 import { fileToResizedDataUrl } from '../lib/image.js';
 
+const URL_IN_TEXT = /https?:\/\/[^\s<]+/gi;
+
+function LinkedText({ text }) {
+  const value = String(text ?? '');
+  const parts = [];
+  let last = 0;
+  for (const match of value.matchAll(URL_IN_TEXT)) {
+    const raw = match[0];
+    const url = raw.replace(/[),.;!?]+$/, '');
+    const start = match.index ?? 0;
+    if (start > last) parts.push(value.slice(last, start));
+    parts.push(
+      <a key={start} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', overflowWrap: 'anywhere' }}>
+        {url}
+      </a>
+    );
+    if (raw.length > url.length) parts.push(raw.slice(url.length));
+    last = start + raw.length;
+  }
+  if (last < value.length) parts.push(value.slice(last));
+  return parts;
+}
+
 export default function BingoSquare({ square, onClose }) {
   const { redeemBingoCode, completeBingoSquare } = useAppState();
   const [code, setCode] = useState('');
@@ -90,7 +113,7 @@ export default function BingoSquare({ square, onClose }) {
       </button>
       <span className="tag">{square.area}</span>
       <h1 id="bingo-square-title">{title}</h1>
-      <p>{square.prompt}</p>
+      <p><LinkedText text={square.prompt} /></p>
       {isVendorClue && square.assignmentClue ? (
         <p style={{ whiteSpace: 'pre-line' }}>{square.assignmentClue}</p>
       ) : null}
